@@ -1,24 +1,28 @@
 @file:Suppress("UnstableApiUsage")
 
 plugins {
-    id("com.android.library")
-    kotlin("android")
+    alias(libs.plugins.com.android.library)
+    alias(libs.plugins.org.jetbrains.kotlin.android)
 }
 
 android {
-    namespace = "com.lord_markus.ranobe_reader.auth.data"
+    namespace = "${AndroidConfig.BASE_PACKAGE}.auth.data"
     compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
@@ -31,12 +35,12 @@ android {
 }
 
 dependencies {
-    implementation(project(":auth_presentation"))
+    implementation(project(":auth:domain"))
 
-    implementation(libs.core.ktx)
-    implementation(libs.appcompat)
+    implementation(androidx.core.ktx)
+    implementation(androidx.appcompat)
     implementation(libs.material)
     testImplementation(libs.junit4)
-    androidTestImplementation(libs.junit)
-    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(androidx.test.ext)
+    androidTestImplementation(androidx.test.espresso.core)
 }

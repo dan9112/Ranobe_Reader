@@ -3,14 +3,16 @@
 plugins {
     id("com.android.application")
     kotlin("android")
+    kotlin("kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
-    namespace = "com.lord_markus.ranobe_reader.app"
+    namespace = "${AndroidConfig.BASE_PACKAGE}.app"
     compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {
-        applicationId = "com.lord_markus.ranobe_reader"
+        applicationId = AndroidConfig.BASE_PACKAGE
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = 1
@@ -49,14 +51,13 @@ android {
 }
 
 dependencies {
+    implementation(project(":design"))
 
-    implementation(project(":auth_data"))
+    implementation(project(":auth"))
+
     implementation(androidx.core.ktx)
     implementation(androidx.lifecycle.runtimektx)
     implementation(compose.activity)
-    implementation(platform(compose.bom))
-    implementation(compose.bundles.ui)
-    implementation(compose.material3)
     testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
@@ -64,4 +65,15 @@ dependencies {
     androidTestImplementation(compose.ui.test.manifest)
     debugImplementation(compose.ui.tooling)
     debugImplementation(compose.ui.test.manifest)
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+
+    implementation(libs.hilt.navigation.compose)
+
+    implementation(androidx.lifecycle.viewmodel.compose)
+}
+
+kapt {
+    correctErrorTypes = true
 }

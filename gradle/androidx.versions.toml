@@ -3,10 +3,15 @@ core-ktx = "1.10.1"
 lifecycle = "2.6.1"
 test-ext = "1.1.5"
 test-espresso-core = "3.5.1"
+lifecycle-viewmodel-compose = "2.6.1"
+appcompat = "1.6.1"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 lifecycle-runtimektx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 
 test-ext = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "test-ext" }
 test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "test-espresso-core" }
+
+lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle-viewmodel-compose" }
