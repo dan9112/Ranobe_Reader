@@ -8,7 +8,7 @@ import com.lord_markus.ranobe_reader.auth.domain.models.SignUpResult
 import com.lord_markus.ranobe_reader.auth.domain.models.UserState
 
 interface Repository {
-    fun checkAuthState(login: String, password: String): AuthCheckResult
+    fun checkAuthState(): AuthCheckResult
     fun signIn(login: String, password: String): SignInResult
 
     fun signOut(): SignOutResult
