@@ -3,6 +3,7 @@
 plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
+    kotlin("kapt")
 }
 
 android {
@@ -43,4 +44,9 @@ dependencies {
     testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
+
+    implementation(androidx.room.runtime)
+    annotationProcessor(androidx.room.annotationProcessor)
+    kapt(androidx.room.kapt)
+    implementation(androidx.room.ktx)
 }

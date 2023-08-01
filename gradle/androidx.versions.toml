@@ -5,6 +5,7 @@ test-ext = "1.1.5"
 test-espresso-core = "3.5.1"
 lifecycle-viewmodel-compose = "2.6.1"
 appcompat = "1.6.1"
+room = "2.5.2"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
@@ -15,3 +16,8 @@ test-ext = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "tes
 test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "test-espresso-core" }
 
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle-viewmodel-compose" }
+
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-annotationProcessor = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-kapt = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
