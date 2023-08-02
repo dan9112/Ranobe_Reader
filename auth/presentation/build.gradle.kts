@@ -3,6 +3,7 @@
 plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
+    kotlin("kapt")
 }
 
 android {
@@ -32,6 +33,12 @@ android {
     kotlinOptions {
         jvmTarget = AndroidConfig.JAVA_VERSION.toString()
     }
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.1"
+    }
 }
 
 dependencies {
@@ -39,10 +46,18 @@ dependencies {
 
     implementation(project(":auth:domain"))
 
+    api(compose.bundles.ui)
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
     implementation(libs.material)
     testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+}
+
+kapt {
+    correctErrorTypes = true
 }
