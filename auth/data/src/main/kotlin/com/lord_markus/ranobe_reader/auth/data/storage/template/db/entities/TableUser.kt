@@ -4,9 +4,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import com.lord_markus.ranobe_reader.auth.data.storage.implementation.db.type_converters.UserStateTypeConverter
-import com.lord_markus.ranobe_reader.auth.domain.models.UserState
 
 @Entity(
     tableName = "users",
@@ -17,7 +14,5 @@ data class TableUser(
     @ColumnInfo(name = "_id")
     val id: Long,
     var login: String,
-    var password: String,
-    @TypeConverters(UserStateTypeConverter::class)
-    val state: UserState = UserState.User
+    var password: String
 )
