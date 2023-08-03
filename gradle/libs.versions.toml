@@ -8,7 +8,6 @@ material = "1.9.0"
 org-jetbrains-kotlin-jvm = "1.9.0"
 agp = "8.0.0"
 org-jetbrains-kotlin-android = "1.8.10"
-junit = "1.1.5"
 
 [libraries]
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt-android" }
@@ -20,6 +19,7 @@ koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compos
 koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
 koin-test = { group = "io.insert-koin", name = "koin-test", version.ref = "koin" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
 [plugins]
 org-jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "org-jetbrains-kotlin-jvm" }
 com-android-application = { id = "com.android.application", version.ref = "agp" }

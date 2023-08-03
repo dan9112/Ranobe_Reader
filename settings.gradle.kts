@@ -1,8 +1,5 @@
 @file:Suppress("UnstableApiUsage")
 
-include(":design")
-
-
 pluginManagement {
     repositories {
         google()
@@ -31,5 +28,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Ranobe Reader"
 include(":app")
+include(":design")
 include(":auth", ":auth:presentation", ":auth:domain", ":auth:data")
  
