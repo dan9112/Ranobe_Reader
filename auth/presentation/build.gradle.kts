@@ -46,7 +46,10 @@ dependencies {
 
     implementation(project(":auth:domain"))
 
+    api(compose.bom)
     api(compose.bundles.ui)
+    api(compose.material3)
+    debugApi(compose.ui.tooling)
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
     implementation(libs.material)
@@ -57,4 +60,6 @@ dependencies {
     implementation(androidx.lifecycle.viewmodel.compose)
 
     implementation(compose.lifecycle.runtime)
+
+    api(androidx.lifecycle.viewmodel.compose)
 }

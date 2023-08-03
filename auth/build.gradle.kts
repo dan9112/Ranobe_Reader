@@ -59,6 +59,4 @@ dependencies {
 
     // implementation(libs.koin.android.compat)
     implementation(libs.koin.androidx.compose)
-
-    implementation(androidx.lifecycle.viewmodel.compose)
 }
