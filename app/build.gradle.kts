@@ -4,7 +4,6 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
-    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -65,14 +64,4 @@ dependencies {
     androidTestImplementation(compose.ui.test.manifest)
     debugImplementation(compose.ui.tooling)
     debugImplementation(compose.ui.test.manifest)
-
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
-    implementation(libs.hilt.navigation.compose)
-
-    implementation(androidx.lifecycle.viewmodel.compose)
-}
-
-kapt {
-    correctErrorTypes = true
 }

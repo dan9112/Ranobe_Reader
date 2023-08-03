@@ -54,10 +54,8 @@ dependencies {
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
 
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
-}
+    implementation(libs.koin.core)
+    testImplementation(libs.koin.test)
 
-kapt {
-    correctErrorTypes = true
+    implementation(libs.koin.androidx.compose)
 }
