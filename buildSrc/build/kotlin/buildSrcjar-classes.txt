@@ -1,1 +1,0 @@
-/home/lord/IdeaProjects/Ranobe_Reader/buildSrc/build/classes/kotlin/main/AndroidConfig.class
