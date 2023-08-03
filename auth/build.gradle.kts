@@ -57,5 +57,8 @@ dependencies {
     implementation(libs.koin.core)
     testImplementation(libs.koin.test)
 
+    // implementation(libs.koin.android.compat)
     implementation(libs.koin.androidx.compose)
+
+    implementation(androidx.lifecycle.viewmodel.compose)
 }

@@ -1,35 +1,36 @@
 package com.lord_markus.ranobe_reader.auth.di
 
+import com.lord_markus.ranobe_reader.auth.data.repository.RepositoryImpl
+import com.lord_markus.ranobe_reader.auth.data.storage.implementation.DataSource
+import com.lord_markus.ranobe_reader.auth.data.storage.implementation.db.AppDatabase
+import com.lord_markus.ranobe_reader.auth.data.storage.template.db.IAppDatabase
+import com.lord_markus.ranobe_reader.auth.data.storage.template.db.IDataSource
+import com.lord_markus.ranobe_reader.auth.domain.repository.Repository
+import org.koin.android.ext.koin.androidContext
+import org.koin.dsl.module
 
-object DataModule {
-    /*@Singleton
-    @Provides
-    fun provideRepository(dataSource: IDataSource): Repository = RepositoryImpl(dataSource)
+val dataModule = module {
+    single<IAppDatabase> { AppDatabase.create(androidContext()) }
 
-    @Singleton
-    @Provides
-    fun provideDataSource(
-        tableUsersDao: ITableUserDao,
-        tableUserInfoDao: ITableUserInfoDao,
-        tableUserAuthState: ITableUserAuthStateDao,
-        database: IAppDatabase,
-        @ApplicationContext context: Context
-    ): IDataSource =
-        DataSource(tableUsersDao, tableUserInfoDao, tableUserAuthState, database, context)
-
-    @Singleton
-    @Provides
-    fun provideTableUserDao(database: IAppDatabase) = database.tableUserDao()
-
-    @Singleton
-    @Provides
-    fun provideTableUserInfoDao(database: IAppDatabase) = database.tableUserInfoDao()
-
-    @Singleton
-    @Provides
-    fun provideTableUserAuthStateDao(database: IAppDatabase) = database.tableUserAuthStateDao()
-
-    @Singleton
-    @Provides
-    fun provideDatabase(@ApplicationContext app: Context) = AppDatabase.create(context = app)*/
+    single {
+        get<IAppDatabase>().tableUserDao()
+    }
+    single {
+        get<IAppDatabase>().tableUserInfoDao()
+    }
+    single {
+        get<IAppDatabase>().tableUserAuthStateDao()
+    }
+    single<IDataSource> {
+        DataSource(
+            tableUsersDao = get(),
+            tableUserInfoDao = get(),
+            tableUserAuthState = get(),
+            database = get(),
+            context = androidContext()
+        )
+    }
+    single<Repository> {
+        RepositoryImpl(dataSource = get())
+    }
 }

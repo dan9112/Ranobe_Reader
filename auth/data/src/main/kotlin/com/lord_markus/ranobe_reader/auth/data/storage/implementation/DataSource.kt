@@ -13,6 +13,9 @@ import com.lord_markus.ranobe_reader.auth.data.storage.template.db.entities.Tabl
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.entities.TableUserInfo
 import com.lord_markus.ranobe_reader.auth.domain.models.UserInfo
 import com.lord_markus.ranobe_reader.auth.domain.models.UserState
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.concurrent.Callable
 
@@ -21,7 +24,8 @@ class DataSource(
     private val tableUserInfoDao: ITableUserInfoDao,
     private val tableUserAuthState: ITableUserAuthStateDao,
     private val database: IAppDatabase,
-    private val context: Context
+    private val context: Context,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : IDataSource {
     private val sharedPreferences
         get() = context.getSharedPreferences("users", MODE_PRIVATE)
@@ -35,91 +39,103 @@ class DataSource(
             .apply()
     }
 
-    override fun signIn(login: String, password: String) = database.runInTransaction(
-        body = Callable {
-            tableUsersDao.getId(login, password)
-                ?.let { id ->
-                    tableUserInfoDao.getInfoById(id)
-                        .run {
-                            if (this == null) throw IOException("Couldn't get user info for id = $id")
-                            UserInfo(id, state)
-                        }
-                        .apply {
-                            tableUserAuthState.addState(
-                                userState = TableUserAuthState(id, true)
-                            ) ?: throw IOException("Couldn't update signed in list for id = $id")
-                        }
-                        .updateSharedPreferences {
-                            putLong(CURRENT_USER_ID_KEY, id)
-                        }
-                }
-        }
-    )
-
-    override fun signOut() {
-        if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
-            val id = sharedPreferences.getLong(CURRENT_USER_ID_KEY, 1L)
-            if (tableUserAuthState.removeUserById(id) > 0) {
-                updateSharedPreferences {
-                    remove(CURRENT_USER_ID_KEY)
-                }
-            } else {
-                updateSharedPreferences {
-                    remove(CURRENT_USER_ID_KEY)
-                }
-                throw IOException("No such user with id = $id!")
+    override suspend fun signIn(login: String, password: String) = withContext(defaultDispatcher) {
+        database.runInTransaction(
+            body = Callable {
+                tableUsersDao.getId(login, password)
+                    ?.let { id ->
+                        tableUserInfoDao.getInfoById(id)
+                            .run {
+                                if (this == null) throw IOException("Couldn't get user info for id = $id")
+                                UserInfo(id, state)
+                            }
+                            .apply {
+                                tableUserAuthState.addState(
+                                    userState = TableUserAuthState(id, true)
+                                ) ?: throw IOException("Couldn't update signed in list for id = $id")
+                            }
+                            .updateSharedPreferences {
+                                putLong(CURRENT_USER_ID_KEY, id)
+                            }
+                    }
             }
-        } else throw IOException("No signed in users")
+        )
     }
 
-    override fun addUser(
+    override suspend fun signOut() {
+        withContext(defaultDispatcher) {
+            if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
+                val id = sharedPreferences.getLong(CURRENT_USER_ID_KEY, 1L)
+                if (tableUserAuthState.removeUserById(id) > 0) {
+                    updateSharedPreferences {
+                        remove(CURRENT_USER_ID_KEY)
+                    }
+                } else {
+                    updateSharedPreferences {
+                        remove(CURRENT_USER_ID_KEY)
+                    }
+                    throw IOException("No such user with id = $id!")
+                }
+            } else throw IOException("No signed in users")
+        }
+    }
+
+    override suspend fun addUser(
         login: String,
         password: String,
         state: UserState
-    ) = database.runInTransaction(
-        body = Callable {
-            tableUsersDao.addUser(user = TableUser(id = 0L, login, password)).let { id ->
-                if (id < 0) {
-                    null
-                } else {
-                    tableUserInfoDao.addInfo(userInfo = TableUserInfo(id, state)) ?: return@let null
-                    tableUserAuthState.addState(userState = TableUserAuthState(id))
-                        ?: return@let null
-                    id
+    ) = withContext(defaultDispatcher) {
+        database.runInTransaction(
+            body = Callable {
+                tableUsersDao.addUser(user = TableUser(id = 0L, login, password)).let { id ->
+                    if (id < 0) {
+                        null
+                    } else {
+                        tableUserInfoDao.addInfo(userInfo = TableUserInfo(id, state)) ?: return@let null
+                        tableUserAuthState.addState(userState = TableUserAuthState(id))
+                            ?: return@let null
+                        id
+                    }
                 }
             }
-        }
-    )
+        )
+    }
 
-    override fun removeUser(id: Long) = tableUsersDao
-        .removeUser(userId = id)
-        .updateSharedPreferences {
-            remove(CURRENT_USER_ID_KEY)
-        }
+    override suspend fun removeUser(id: Long) = withContext(defaultDispatcher) {
+        tableUsersDao
+            .removeUser(userId = id)
+            .updateSharedPreferences {
+                remove(CURRENT_USER_ID_KEY)
+            }
+    }
 
-    override fun getSignedIn() = database.runInTransaction(
-        body = Callable {
-            tableUserAuthState.getAllSignedIn().map {
-                tableUserInfoDao.getInfoById(id = it)?.run {
-                    UserInfo(id, state)
-                } ?: throw IOException("Caught user without info: id = $it!")
-            }.let { usersInfo ->
-                usersInfo to if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
-                    sharedPreferences.getLong(CURRENT_USER_ID_KEY, -1L)
-                } else {// никогда не должен срабатывать, страховка!
-                    usersInfo.first().id.also { id ->
-                        updateSharedPreferences {
-                            putLong(CURRENT_USER_ID_KEY, id)
+    override suspend fun getSignedIn(): Pair<List<UserInfo>, Long> = withContext(defaultDispatcher) {
+        database.runInTransaction(
+            body = Callable {
+                tableUserAuthState.getAllSignedIn().map {
+                    tableUserInfoDao.getInfoById(id = it)?.run {
+                        UserInfo(id, state)
+                    } ?: throw IOException("Caught user without info: id = $it!")
+                }.let { usersInfo ->
+                    usersInfo to if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
+                        sharedPreferences.getLong(CURRENT_USER_ID_KEY, -1L)
+                    } else {// никогда не должен срабатывать, страховка!
+                        usersInfo.first().id.also { id ->
+                            updateSharedPreferences {
+                                putLong(CURRENT_USER_ID_KEY, id)
+                            }
                         }
                     }
                 }
             }
-        }
-    )
+        )
+    }
 
-    override fun setCurrent(id: Long) = tableUserAuthState.getAuthStateById(id)?.also {
-        if (it) updateSharedPreferences {
-            putLong(CURRENT_USER_ID_KEY, id)
+    override suspend fun setCurrent(id: Long) = withContext(defaultDispatcher) {
+        tableUserAuthState.getAuthStateById(id)?.also {
+            if (it) updateSharedPreferences {
+                putLong(CURRENT_USER_ID_KEY, id)
+            }
         }
     }
 

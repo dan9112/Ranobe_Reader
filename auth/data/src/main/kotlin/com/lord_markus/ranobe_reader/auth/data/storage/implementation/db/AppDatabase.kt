@@ -1,6 +1,8 @@
 package com.lord_markus.ranobe_reader.auth.data.storage.implementation.db
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.lord_markus.ranobe_reader.auth.data.storage.implementation.db.dao.TableUserAuthStateDao
@@ -21,4 +23,14 @@ abstract class AppDatabase : RoomDatabase(), IAppDatabase {
     abstract override fun tableUserDao(): TableUserDao
     abstract override fun tableUserInfoDao(): TableUserInfoDao
     abstract override fun tableUserAuthStateDao(): TableUserAuthStateDao
+
+    companion object {
+        fun create(context: Context): IAppDatabase = Room
+            .databaseBuilder(
+                context = context,
+                klass = AppDatabase::class.java,
+                name = "auth_database"
+            )
+            .build()
+    }
 }
