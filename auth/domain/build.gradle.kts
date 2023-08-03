@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.org.jetbrains.kotlin.jvm)
 }
 
-java {
-    sourceCompatibility = AndroidConfig.JAVA_VERSION
-    targetCompatibility = AndroidConfig.JAVA_VERSION
+kotlin {
+    jvmToolchain(AndroidConfig.COMPILE_JVM_VERSION)
 }

@@ -8,4 +8,5 @@ object AndroidConfig {
     const val TARGET_SDK = 34
 
     val JAVA_VERSION = JavaVersion.VERSION_17
+    const val COMPILE_JVM_VERSION = 17
 }
