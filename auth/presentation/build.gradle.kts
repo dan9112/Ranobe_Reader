@@ -62,4 +62,6 @@ dependencies {
     implementation(compose.lifecycle.runtime)
 
     api(androidx.lifecycle.viewmodel.compose)
+
+    implementation("com.vdurmont:emoji-java:5.1.1")
 }

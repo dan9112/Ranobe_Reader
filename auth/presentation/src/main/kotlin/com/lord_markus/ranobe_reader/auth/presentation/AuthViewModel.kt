@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(private val signInUseCase: SignInUseCase, private val signUpUseCase: SignUpUseCase) : ViewModel() {
-    private val _authState = MutableStateFlow<UseCaseState<SignInResult>>(UseCaseState.Default)
+    private val _authState = MutableStateFlow<UseCaseState<SignInResult>>(value = UseCaseState.Default)
     val authState: StateFlow<UseCaseState<SignInResult>>
         get() = _authState
 
