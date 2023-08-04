@@ -3,6 +3,7 @@
 package com.lord_markus.ranobe_reader.auth.presentation
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -18,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -44,6 +47,7 @@ fun AuthScreen(viewModel: AuthViewModel) {
     val keyboardController = LocalSoftwareKeyboardController.current
     var errorColor by rememberSaveable { mutableStateOf(value = false) }
 
+    val context = LocalContext.current
     LaunchedEffect(authState) {
         when (val currentState = authState) {
             UseCaseState.InProcess -> {
@@ -59,6 +63,7 @@ fun AuthScreen(viewModel: AuthViewModel) {
                 when (val result = currentState.result) {
                     is SignInResult.Error -> {
                         errorColor = true
+                        Toast.makeText(context, R.string.you_re_fucked, Toast.LENGTH_SHORT).show()
                         Log.d("MyLog", "It caught error:\n${result.error}")
                     }
 
@@ -83,7 +88,7 @@ fun AuthScreen(viewModel: AuthViewModel) {
             focusedLabelColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
             unfocusedLabelColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary
         )
-        Text(text = "Login")
+        Text(text = stringResource(R.string.login))
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = login,
@@ -99,7 +104,7 @@ fun AuthScreen(viewModel: AuthViewModel) {
                 imeAction = ImeAction.Next,
                 keyboardType = KeyboardType.Text
             ),
-            label = { Text("Username") },
+            label = { Text(text = stringResource(R.string.username)) },
             keyboardActions = KeyboardActions(
                 onNext = { focusRequester.requestFocus() }
             ),
@@ -124,7 +129,7 @@ fun AuthScreen(viewModel: AuthViewModel) {
                     password = newValue
                 }
             },
-            label = { Text("Password") },
+            label = { Text(text = stringResource(R.string.password)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Done,
@@ -158,14 +163,14 @@ fun AuthScreen(viewModel: AuthViewModel) {
             modifier = Modifier.fillMaxWidth(),
             enabled = authState != UseCaseState.InProcess
         ) {
-            Text(text = "Login")
+            Text(text = stringResource(R.string.login_verb))
         }
     }
 }
 
 @Preview
 @Composable
-fun PreviewLoginScreen() {
+fun PreviewAuthScreen() {
     AuthScreen(
         AuthViewModel(
             signInUseCase = SignInUseCase(repository = repositoryStub),

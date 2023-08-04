@@ -2,4 +2,9 @@
 <resources>
     <string name="hi">Привет!</string>
     <string name="change">Изменить</string>
+    <string name="you_re_fucked">Тебя поимели!</string>
+    <string name="login">Авторизация</string>
+    <string name="username">Имя пользователя</string>
+    <string name="password">Пароль</string>
+    <string name="login_verb">Войти</string>
 </resources>
