@@ -29,5 +29,6 @@ dependencyResolutionManagement {
 rootProject.name = "Ranobe Reader"
 include(":app")
 include(":design")
+include(":koin_core")
 include(":auth", ":auth:presentation", ":auth:domain", ":auth:data")
  

@@ -1,23 +1,15 @@
 package com.lord_markus.ranobe_reader.auth.app
 
-import android.content.Context
 import com.lord_markus.ranobe_reader.auth.di.dataModule
 import com.lord_markus.ranobe_reader.auth.di.domainModule
 import com.lord_markus.ranobe_reader.auth.di.presentationModule
-import org.koin.android.ext.koin.androidContext
-import org.koin.android.ext.koin.androidLogger
-import org.koin.core.context.startKoin
+import com.lord_markus.ranobe_reader.koin_core.app.KoinAppCore
+import org.koin.core.KoinApplication
 
-class AuthApp {
-    fun onCreate(context: Context) {
-        startKoin {
-            androidLogger()
-            androidContext(androidContext = context)
-            modules(
-                dataModule,
-                domainModule,
-                presentationModule
-            )
-        }
-    }
+class AuthApp : KoinAppCore {
+    override fun module(koinApplication: KoinApplication) = koinApplication.modules(
+        dataModule,
+        domainModule,
+        presentationModule
+    )
 }

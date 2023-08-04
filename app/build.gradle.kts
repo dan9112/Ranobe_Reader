@@ -52,6 +52,7 @@ android {
 dependencies {
     implementation(project(":design"))
 
+    implementation(project(":koin_core"))
     implementation(project(":auth"))
 
     implementation(androidx.core.ktx)

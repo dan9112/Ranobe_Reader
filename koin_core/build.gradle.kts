@@ -3,11 +3,10 @@
 plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
-    kotlin("kapt")
 }
 
 android {
-    namespace = "${AndroidConfig.BASE_PACKAGE}.auth"
+    namespace = "${AndroidConfig.BASE_PACKAGE}.koin_core"
     compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {
@@ -20,10 +19,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
@@ -33,28 +29,16 @@ android {
     kotlinOptions {
         jvmTarget = AndroidConfig.JAVA_VERSION.toString()
     }
-    // Не работает Jetpack Compose без функций ниже
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
-    }
 }
 
 dependencies {
-    implementation(project(":koin_core"))
-
-    implementation(project(":auth:presentation"))
-    implementation(project(":auth:domain"))
-    implementation(project(":auth:data"))
-
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
     implementation(libs.material)
     testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
+
 
     implementation(libs.koin.core)
     testImplementation(libs.koin.test)
