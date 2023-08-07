@@ -4,6 +4,8 @@ lifecycle = "2.6.1"
 test-ext = "1.1.5"
 test-espresso-core = "3.5.1"
 lifecycle-viewmodel-compose = "2.6.1"
+lifecycle-runtime-compose = "2.6.1"
+lifecycle-viewmodel-savedstate = "2.6.1"
 appcompat = "1.6.1"
 room = "2.5.2"
 
@@ -15,9 +17,14 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 test-ext = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "test-ext" }
 test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "test-espresso-core" }
 
+lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle-runtime-compose" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle-viewmodel-compose" }
+lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "lifecycle-viewmodel-savedstate" }
 
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-annotationProcessor = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-kapt = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+
+[bundles]
+lifecycle = ["lifecycle-runtime-compose", "lifecycle-viewmodel-compose", "lifecycle-viewmodel-savedstate"]

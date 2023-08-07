@@ -7,4 +7,5 @@
     <string name="username">Имя пользователя</string>
     <string name="password">Пароль</string>
     <string name="login_verb">Войти</string>
+    <string name="signup">Зарегистрироваться</string>
 </resources>

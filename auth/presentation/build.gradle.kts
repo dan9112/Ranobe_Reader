@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
     kotlin("kapt")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -57,11 +58,8 @@ dependencies {
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
 
-    implementation(androidx.lifecycle.viewmodel.compose)
-
     implementation(compose.lifecycle.runtime)
+    implementation(androidx.bundles.lifecycle)
 
-    api(androidx.lifecycle.viewmodel.compose)
-
-    implementation("com.vdurmont:emoji-java:5.1.1")
+    implementation(libs.emoji.java)
 }

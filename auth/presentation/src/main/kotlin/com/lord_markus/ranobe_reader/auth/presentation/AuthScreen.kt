@@ -22,11 +22,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth.domain.models.*
 import com.lord_markus.ranobe_reader.auth.domain.repository.Repository
@@ -38,7 +43,8 @@ import com.vdurmont.emoji.EmojiParser
 private val inputRegex = Regex(pattern = "[\\s\n]+")
 
 @Composable
-fun AuthScreen(viewModel: AuthViewModel) {
+fun AuthScreen(getViewModel: @Composable () -> AuthViewModel) {
+    val viewModel = getViewModel()
     val authState by viewModel.authState.collectAsStateWithLifecycle()
 
     var login by rememberSaveable { mutableStateOf(value = "") }
@@ -47,23 +53,23 @@ fun AuthScreen(viewModel: AuthViewModel) {
     val keyboardController = LocalSoftwareKeyboardController.current
     var errorColor by rememberSaveable { mutableStateOf(value = false) }
 
-    val context = LocalContext.current
-    LaunchedEffect(authState) {
-        when (val currentState = authState) {
-            UseCaseState.InProcess -> {
-                Log.d("MyLog", "Process continues...")// show indicator
-            }
+    when (val currentState = authState) {
+        UseCaseState.InProcess -> {
+            Log.d("MyLog", "Process continues...")// show indicator
+        }
 
-            UseCaseState.Default -> {
-                Log.d("MyLog", "Process has not been started yet")// hide indicator
-            }
+        UseCaseState.Default -> {
+            Log.d("MyLog", "Process has not been started yet")// hide indicator
+        }
 
-            is UseCaseState.ResulReceived -> {
+        is UseCaseState.ResultReceived -> {
+            if (currentState.trigger) {
+                viewModel.caughtTrigger()
                 Log.d("MyLog", "Process finished")// hide indicator
                 when (val result = currentState.result) {
                     is SignInResult.Error -> {
                         errorColor = true
-                        Toast.makeText(context, R.string.you_re_fucked, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(LocalContext.current, R.string.you_re_fucked, Toast.LENGTH_SHORT).show()
                         Log.d("MyLog", "It caught error:\n${result.error}")
                     }
 
@@ -160,22 +166,33 @@ fun AuthScreen(viewModel: AuthViewModel) {
                 viewModel.tryLogIn(login, password)
                 keyboardController?.hide()
             },
-            modifier = Modifier.fillMaxWidth(),
             enabled = authState != UseCaseState.InProcess
         ) {
             Text(text = stringResource(R.string.login_verb))
         }
+        val annotatedString = buildAnnotatedString {
+            withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
+                append(stringResource(R.string.signup))
+            }
+        }
+        Text(
+            text = annotatedString,
+            modifier = Modifier.clickable { Log.i("MyLog", "Sign up clicked!..") }
+        )
     }
 }
 
-@Preview
+@Preview(device = "spec:parent=Nexus 10")
 @Composable
 fun PreviewAuthScreen() {
     AuthScreen(
-        AuthViewModel(
-            signInUseCase = SignInUseCase(repository = repositoryStub),
-            signUpUseCase = SignUpUseCase(repository = repositoryStub)
-        )
+        getViewModel = {
+            AuthViewModel(
+                savedStateHandler = SavedStateHandle(),
+                signInUseCase = SignInUseCase(repository = repositoryStub),
+                signUpUseCase = SignUpUseCase(repository = repositoryStub)
+            )
+        }
     )
 }
 
