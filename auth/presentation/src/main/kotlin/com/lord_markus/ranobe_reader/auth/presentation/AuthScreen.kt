@@ -98,13 +98,20 @@ fun SignUpScreen(
                 when (val result = currentState.result) {
                     is SignUpResult.Error -> {
                         errorColor = true
-                        Toast.makeText(LocalContext.current, R.string.you_re_fucked, Toast.LENGTH_SHORT).show()
-                        Log.d("MyLog", "It caught error:\n${result.error}")// todo: вывод ошибки
+                        Toast.makeText(
+                            LocalContext.current,
+                            when (val error = result.error) {
+                                SignUpError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
+                                SignUpError.LoginAlreadyInUse -> stringResource(R.string.login_is_already_in_use)
+                                SignUpError.PasswordRequirements -> stringResource(R.string.invalid_password)
+                                is ResultError.StorageError -> error.message
+                            },
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
 
                     is SignUpResult.Success -> {
                         onSuccess(result.userInfo)
-                        Log.d("MyLog", "Success signed up:\n${result.userInfo}")// todo: переход в главное окно
                     }
                 }
             }
@@ -250,13 +257,19 @@ fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserInfo) -> 
                 when (val result = currentState.result) {
                     is SignInResult.Error -> {
                         errorColor = true
-                        Toast.makeText(LocalContext.current, R.string.you_re_fucked, Toast.LENGTH_SHORT).show()
-                        Log.d("MyLog", "It caught error:\n${result.error}")// todo: вывод ошибки
+                        Toast.makeText(
+                            LocalContext.current,
+                            when (val error = result.error) {
+                                SignInError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
+                                SignInError.NoSuchUser -> stringResource(id = R.string.no_such_user)
+                                is ResultError.StorageError -> error.message
+                            },
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
 
                     is SignInResult.Success -> {
                         onSuccess(result.userInfo)
-                        Log.d("MyLog", "Success signed in:\n${result.userInfo}")// todo: переход в главное окно
                     }
                 }
             }

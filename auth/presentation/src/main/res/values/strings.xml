@@ -10,4 +10,8 @@
     <string name="login_verb">Login</string>
     <string name="sign_up">SignUp</string>
     <string name="registration">Registration</string>
+    <string name="incorrect_input">Incorrect input!</string>
+    <string name="no_such_user">No such user!</string>
+    <string name="login_is_already_in_use">Login is already in use!</string>
+    <string name="invalid_password">Invalid password!</string>
 </resources>

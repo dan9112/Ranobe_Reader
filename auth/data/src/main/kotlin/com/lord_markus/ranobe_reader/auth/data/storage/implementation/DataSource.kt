@@ -3,6 +3,7 @@ package com.lord_markus.ranobe_reader.auth.data.storage.implementation
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import com.lord_markus.ranobe_reader.auth.data.R
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.IAppDatabase
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.IDataSource
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.dao.ITableUserAuthStateDao
@@ -46,13 +47,23 @@ class DataSource(
                     ?.let { id ->
                         tableUserInfoDao.getInfoById(id)
                             .run {
-                                if (this == null) throw IOException("Couldn't get user info for id = $id")
+                                if (this == null) throw IOException(
+                                    context.getString(
+                                        R.string.couldn_t_get_user_info_for_id,
+                                        id
+                                    )
+                                )
                                 UserInfo(id, state)
                             }
                             .apply {
                                 tableUserAuthState.addState(
                                     userState = TableUserAuthState(id, true)
-                                ) ?: throw IOException("Couldn't update signed in list for id = $id")
+                                ) ?: throw IOException(
+                                    context.getString(
+                                        R.string.couldn_t_update_signed_in_list_for_id,
+                                        id
+                                    )
+                                )
                             }
                             .updateSharedPreferences {
                                 putLong(CURRENT_USER_ID_KEY, id)
@@ -74,9 +85,9 @@ class DataSource(
                     updateSharedPreferences {
                         remove(CURRENT_USER_ID_KEY)
                     }
-                    throw IOException("No such user with id = $id!")
+                    throw IOException(context.getString(R.string.no_user_with_id, id))
                 }
-            } else throw IOException("No signed in users")
+            } else throw IOException(context.getString(R.string.no_signed_in_users))
         }
     }
 
@@ -115,7 +126,7 @@ class DataSource(
                 tableUserAuthState.getAllSignedIn().map {
                     tableUserInfoDao.getInfoById(id = it)?.run {
                         UserInfo(id, state)
-                    } ?: throw IOException("Caught user without info: id = $it!")
+                    } ?: throw IOException(context.getString(R.string.caught_user_without_info_id, it))
                 }.let { usersInfo ->
                     usersInfo to if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
                         sharedPreferences.getLong(CURRENT_USER_ID_KEY, -1L)

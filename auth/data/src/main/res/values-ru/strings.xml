@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="couldn_t_get_user_info_for_id">Не удалось получить информацию по пользователю с id = %1$d</string>
+    <string name="couldn_t_update_signed_in_list_for_id">Не удалось обновить список авторизованных пользователей с id = %1$d</string>
+    <string name="no_user_with_id">Нет пользователя с id = %1$d!</string>
+    <string name="no_signed_in_users">Нет авторизованных пользователей!</string>
+    <string name="caught_user_without_info_id">Получен пользователь без информации о нём: id = %1$d!</string>
+</resources>
