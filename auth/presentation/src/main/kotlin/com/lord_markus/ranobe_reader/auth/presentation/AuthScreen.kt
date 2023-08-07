@@ -88,11 +88,12 @@ fun SignUpScreen(viewModel: AuthViewModel, onBack: @Composable ((() -> Unit)?) -
                 when (val result = currentState.result) {
                     is SignUpResult.Error -> {
                         errorColor = true
-                        Log.d("MyLog", "It caught error:\n${result.error}")
+                        Toast.makeText(LocalContext.current, R.string.you_re_fucked, Toast.LENGTH_SHORT).show()
+                        Log.d("MyLog", "It caught error:\n${result.error}")// todo: вывод ошибки
                     }
 
                     is SignUpResult.Success -> {
-                        Log.d("MyLog", "Success signed up")
+                        Log.d("MyLog", "Success signed up:\n${result.userInfo}")// todo: переход в главное окно
                     }
                 }
             }
@@ -174,6 +175,10 @@ fun SignUpScreen(viewModel: AuthViewModel, onBack: @Composable ((() -> Unit)?) -
             colors = colors
         )
         Spacer(modifier = Modifier.height(8.dp))
+        val action: () -> Unit = {
+            viewModel.trySignUp(login, password, password2)
+            keyboardController?.hide()
+        }
         OutlinedTextField(
             value = password2,
             onValueChange = {
@@ -190,12 +195,7 @@ fun SignUpScreen(viewModel: AuthViewModel, onBack: @Composable ((() -> Unit)?) -
                 keyboardType = KeyboardType.Password
             ),
             visualTransformation = PasswordVisualTransformation(),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    viewModel.trySignUp(login, password, password2)
-                    keyboardController?.hide()
-                }
-            ),
+            keyboardActions = KeyboardActions(onDone = { action() }),
             trailingIcon = {
                 if (password2.isNotBlank()) Icon(
                     imageVector = Icons.Default.Clear,
@@ -207,12 +207,7 @@ fun SignUpScreen(viewModel: AuthViewModel, onBack: @Composable ((() -> Unit)?) -
             colors = colors
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = {
-                viewModel.trySignUp(login, password, password2)
-                keyboardController?.hide()
-            }
-        ) {
+        Button(onClick = action) {
             Text(text = stringResource(R.string.sign_up))
         }
     }
@@ -245,11 +240,11 @@ fun SignInScreen(viewModel: AuthViewModel) {
                     is SignInResult.Error -> {
                         errorColor = true
                         Toast.makeText(LocalContext.current, R.string.you_re_fucked, Toast.LENGTH_SHORT).show()
-                        Log.d("MyLog", "It caught error:\n${result.error}")
+                        Log.d("MyLog", "It caught error:\n${result.error}")// todo: вывод ошибки
                     }
 
                     is SignInResult.Success -> {
-                        Log.d("MyLog", "UserInfo:\n${result.userInfo}")
+                        Log.d("MyLog", "Success signed in:\n${result.userInfo}")// todo: переход в главное окно
                     }
                 }
             }
@@ -301,6 +296,10 @@ fun SignInScreen(viewModel: AuthViewModel) {
             colors = colors
         )
         Spacer(modifier = Modifier.height(8.dp))
+        val action: () -> Unit = {
+            viewModel.trySignIn(login, password)
+            keyboardController?.hide()
+        }
         OutlinedTextField(
             value = password,
             onValueChange = {
@@ -318,10 +317,7 @@ fun SignInScreen(viewModel: AuthViewModel) {
             ),
             visualTransformation = PasswordVisualTransformation(),
             keyboardActions = KeyboardActions(
-                onDone = {
-                    viewModel.trySignIn(login, password)
-                    keyboardController?.hide()
-                }
+                onDone = { action() }
             ),
             enabled = signInState != UseCaseState.InProcess,
             trailingIcon = {
@@ -336,10 +332,7 @@ fun SignInScreen(viewModel: AuthViewModel) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = {
-                viewModel.trySignIn(login, password)
-                keyboardController?.hide()
-            },
+            onClick = action,
             enabled = signInState != UseCaseState.InProcess
         ) {
             Text(text = stringResource(R.string.login_verb))
@@ -382,10 +375,13 @@ private val viewModelStub
 
 private val repositoryStub
     get() = object : Repository {
+        private val userInfoStub = UserInfo(id = 0, state = UserState.User)
         override suspend fun getSignedInUsers() = AuthCheckResult.Success(signedIn = emptyList(), currentUserId = 0L)
-        override suspend fun signIn(login: String, password: String) = SignInResult.Success(userInfo = UserState.User)
+        override suspend fun signIn(login: String, password: String) = SignInResult.Success(userInfo = userInfoStub)
         override suspend fun signOut() = SignOutResult.Success
-        override suspend fun signUp(login: String, password: String, state: UserState) = SignUpResult.Success
+        override suspend fun signUp(login: String, password: String, state: UserState) =
+            SignUpResult.Success(userInfo = userInfoStub)
+
         override suspend fun removeAccount(userId: Long) = RemoveAccountResult.Success
         override suspend fun setCurrent(id: Long) = SetCurrentResult.Success
     }

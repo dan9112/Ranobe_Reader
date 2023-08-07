@@ -18,7 +18,7 @@ class RepositoryImpl(
 
     override suspend fun signIn(login: String, password: String) = try {
         dataSource.signIn(login, password)?.run {
-            SignInResult.Success(userInfo = state)
+            SignInResult.Success(userInfo = UserInfo(id = id, state = state))
         } ?: SignInResult.Error(error = SignInError.NoSuchUser)
     } catch (e: IOException) {
         SignInResult.Error(error = ResultError.StorageError(message = e.message))
@@ -32,7 +32,11 @@ class RepositoryImpl(
     }
 
     override suspend fun signUp(login: String, password: String, state: UserState) = try {
-        dataSource.addUser(login, password, state)?.run { SignUpResult.Success }
+        dataSource.addUser(login, password, state)?.let {
+            SignUpResult.Success(
+                userInfo = UserInfo(id = it, state = state)
+            )
+        }
             ?: SignUpResult.Error(error = SignUpError.LoginAlreadyInUse)
     } catch (e: IOException) {
         SignUpResult.Error(error = ResultError.StorageError(message = e.message))
