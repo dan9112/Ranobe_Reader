@@ -6,6 +6,8 @@
     <string name="login">Login</string>
     <string name="username">Username</string>
     <string name="password">Password</string>
+    <string name="password_repeat">Repeat password</string>
     <string name="login_verb">Login</string>
-    <string name="signup">SignUp</string>
+    <string name="sign_up">SignUp</string>
+    <string name="registration">Registration</string>
 </resources>

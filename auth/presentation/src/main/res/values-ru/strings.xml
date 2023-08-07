@@ -6,6 +6,8 @@
     <string name="login">Авторизация</string>
     <string name="username">Имя пользователя</string>
     <string name="password">Пароль</string>
+    <string name="password_repeat">Повторите пароль</string>
     <string name="login_verb">Войти</string>
-    <string name="signup">Зарегистрироваться</string>
+    <string name="sign_up">Зарегистрироваться</string>
+    <string name="registration">Регистрация</string>
 </resources>
