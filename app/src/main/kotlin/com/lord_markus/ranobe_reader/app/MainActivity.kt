@@ -1,6 +1,7 @@
 package com.lord_markus.ranobe_reader.app
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -10,6 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.lord_markus.ranobe_reader.auth.Auth
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
@@ -24,11 +26,21 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Auth.Screen { block: (() -> Unit)? ->
-                        block?.let {
-                            BackHandler { it() }
+                    // todo:
+                    //  - добавить главное окно
+                    //  - добавить навигацию
+                    //  - добавить переход между окнами
+                    //  - добавить Hilt в модуль главного окна
+                    Auth.Screen(
+                        onBack = { block: (() -> Unit)? ->
+                            block?.let {
+                                BackHandler { it() }
+                            }
+                        },
+                        onSuccess = { userInfo ->
+                            Toast.makeText(LocalContext.current, userInfo.toString(), Toast.LENGTH_SHORT).show()
                         }
-                    }
+                    )
                 }
             }
         }

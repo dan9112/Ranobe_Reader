@@ -1,7 +1,7 @@
 package com.lord_markus.ranobe_reader.auth.data.storage.template.db
 
-import com.lord_markus.ranobe_reader.auth.domain.models.UserInfo
-import com.lord_markus.ranobe_reader.auth.domain.models.UserState
+import com.lord_markus.ranobe_reader.core.UserInfo
+import com.lord_markus.ranobe_reader.core.UserState
 
 interface IDataSource {
     suspend fun signIn(login: String, password: String): UserInfo?

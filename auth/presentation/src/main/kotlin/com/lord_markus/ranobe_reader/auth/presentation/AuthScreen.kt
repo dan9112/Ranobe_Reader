@@ -42,23 +42,33 @@ import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignInUseCase
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignUpUseCase
 import com.lord_markus.ranobe_reader.auth.presentation.models.AuthScreenState
 import com.lord_markus.ranobe_reader.auth.presentation.models.UseCaseState
+import com.lord_markus.ranobe_reader.core.UserInfo
+import com.lord_markus.ranobe_reader.core.UserState
 import com.vdurmont.emoji.EmojiParser
 
 private val inputRegex = Regex(pattern = "[\\s\n]+")
 
 @Composable
-fun AuthScreen(getViewModel: @Composable () -> AuthViewModel, onBack: @Composable ((() -> Unit)?) -> Unit) {
+fun AuthScreen(
+    getViewModel: @Composable () -> AuthViewModel,
+    onBack: @Composable ((() -> Unit)?) -> Unit,
+    onSuccess: @Composable (UserInfo) -> Unit
+) {
     val viewModel = getViewModel()
     val authState by viewModel.authScreenState.collectAsStateWithLifecycle()
 
     when (authState) {
-        AuthScreenState.SignIn -> SignInScreen(viewModel = viewModel)
-        AuthScreenState.SignUp -> SignUpScreen(viewModel = viewModel, onBack = onBack)
+        AuthScreenState.SignIn -> SignInScreen(viewModel = viewModel, onSuccess = onSuccess)
+        AuthScreenState.SignUp -> SignUpScreen(viewModel = viewModel, onSuccess = onSuccess, onBack = onBack)
     }
 }
 
 @Composable
-fun SignUpScreen(viewModel: AuthViewModel, onBack: @Composable ((() -> Unit)?) -> Unit) {
+fun SignUpScreen(
+    viewModel: AuthViewModel,
+    onSuccess: @Composable (UserInfo) -> Unit,
+    onBack: @Composable ((() -> Unit)?) -> Unit
+) {
     onBack {
         viewModel.switchAuthScreenState()
     }
@@ -93,6 +103,7 @@ fun SignUpScreen(viewModel: AuthViewModel, onBack: @Composable ((() -> Unit)?) -
                     }
 
                     is SignUpResult.Success -> {
+                        onSuccess(result.userInfo)
                         Log.d("MyLog", "Success signed up:\n${result.userInfo}")// todo: переход в главное окно
                     }
                 }
@@ -214,7 +225,7 @@ fun SignUpScreen(viewModel: AuthViewModel, onBack: @Composable ((() -> Unit)?) -
 }
 
 @Composable
-fun SignInScreen(viewModel: AuthViewModel) {
+fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserInfo) -> Unit) {
     val signInState by viewModel.signInState.collectAsStateWithLifecycle()
 
     var login by rememberSaveable { mutableStateOf(value = "") }
@@ -244,6 +255,7 @@ fun SignInScreen(viewModel: AuthViewModel) {
                     }
 
                     is SignInResult.Success -> {
+                        onSuccess(result.userInfo)
                         Log.d("MyLog", "Success signed in:\n${result.userInfo}")// todo: переход в главное окно
                     }
                 }
@@ -354,7 +366,10 @@ fun SignInScreen(viewModel: AuthViewModel) {
 @Preview(device = "spec:parent=Nexus 10")
 @Composable
 fun PreviewSignInScreen() {
-    SignInScreen(viewModel = viewModelStub)
+    SignInScreen(
+        viewModel = viewModelStub,
+        onSuccess = {}
+    )
 }
 
 @Preview(device = "spec:parent=Nexus 10")
@@ -362,6 +377,7 @@ fun PreviewSignInScreen() {
 fun PreviewSignUpScreen() {
     SignUpScreen(
         viewModel = viewModelStub,
+        onSuccess = {},
         onBack = { }
     )
 }

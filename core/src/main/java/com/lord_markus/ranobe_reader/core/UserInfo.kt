@@ -1,3 +1,3 @@
-package com.lord_markus.ranobe_reader.auth.domain.models
+package com.lord_markus.ranobe_reader.core
 
 data class UserInfo(val id: Long, val state: UserState)

@@ -6,7 +6,3 @@ plugins {
 kotlin {
     jvmToolchain(AndroidConfig.COMPILE_JVM_VERSION)
 }
-
-dependencies {
-    api(project(":core"))
-}

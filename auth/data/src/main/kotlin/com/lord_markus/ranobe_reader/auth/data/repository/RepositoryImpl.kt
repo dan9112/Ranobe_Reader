@@ -3,6 +3,8 @@ package com.lord_markus.ranobe_reader.auth.data.repository
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.IDataSource
 import com.lord_markus.ranobe_reader.auth.domain.models.*
 import com.lord_markus.ranobe_reader.auth.domain.repository.Repository
+import com.lord_markus.ranobe_reader.core.UserInfo
+import com.lord_markus.ranobe_reader.core.UserState
 import java.io.IOException
 
 class RepositoryImpl(

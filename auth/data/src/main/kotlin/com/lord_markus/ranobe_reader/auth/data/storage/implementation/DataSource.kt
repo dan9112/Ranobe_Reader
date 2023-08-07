@@ -11,8 +11,8 @@ import com.lord_markus.ranobe_reader.auth.data.storage.template.db.dao.ITableUse
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.entities.TableUser
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.entities.TableUserAuthState
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.entities.TableUserInfo
-import com.lord_markus.ranobe_reader.auth.domain.models.UserInfo
-import com.lord_markus.ranobe_reader.auth.domain.models.UserState
+import com.lord_markus.ranobe_reader.core.UserInfo
+import com.lord_markus.ranobe_reader.core.UserState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

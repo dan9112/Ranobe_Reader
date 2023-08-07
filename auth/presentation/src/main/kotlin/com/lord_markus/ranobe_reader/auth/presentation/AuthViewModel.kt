@@ -4,11 +4,15 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.lord_markus.ranobe_reader.auth.domain.models.*
+import com.lord_markus.ranobe_reader.auth.domain.models.SignInError
+import com.lord_markus.ranobe_reader.auth.domain.models.SignInResult
+import com.lord_markus.ranobe_reader.auth.domain.models.SignUpError
+import com.lord_markus.ranobe_reader.auth.domain.models.SignUpResult
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignInUseCase
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignUpUseCase
 import com.lord_markus.ranobe_reader.auth.presentation.models.AuthScreenState
 import com.lord_markus.ranobe_reader.auth.presentation.models.UseCaseState
+import com.lord_markus.ranobe_reader.core.UserState
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
