@@ -1,6 +1,6 @@
 [versions]
-hilt-android = "2.45"
-hilt-android-compiler = "2.44.2"
+hilt-android = "2.47"
+hilt-android-compiler = "2.47"
 hilt-navigation-compose = "1.0.0"
 junit4 = "4.13.2"
 koin = "3.4.3"

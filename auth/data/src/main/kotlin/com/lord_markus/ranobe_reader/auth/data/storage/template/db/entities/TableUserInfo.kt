@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.PrimaryKey
-import com.lord_markus.ranobe_reader.core.UserState
+import com.lord_markus.ranobe_reader.core.models.UserState
 
 @Entity(
     tableName = "users_info",

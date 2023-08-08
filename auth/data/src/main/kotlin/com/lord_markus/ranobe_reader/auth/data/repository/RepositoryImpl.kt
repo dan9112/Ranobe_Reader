@@ -3,16 +3,18 @@ package com.lord_markus.ranobe_reader.auth.data.repository
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.IDataSource
 import com.lord_markus.ranobe_reader.auth.domain.models.*
 import com.lord_markus.ranobe_reader.auth.domain.repository.Repository
-import com.lord_markus.ranobe_reader.core.UserInfo
-import com.lord_markus.ranobe_reader.core.UserState
+import com.lord_markus.ranobe_reader.core.models.UserInfo
+import com.lord_markus.ranobe_reader.core.models.UserState
 import java.io.IOException
 
 class RepositoryImpl(
     private val dataSource: IDataSource
 ) : Repository {
     override suspend fun getSignedInUsers(): AuthCheckResult = try {
-        dataSource.getSignedIn().run {
-            AuthCheckResult.Success(signedIn = first, currentUserId = second)
+        dataSource.getSignedIn().let { signedInUsers ->
+            signedInUsers?.run {
+                AuthCheckResult.Success.SignedIn(signedIn = first, currentUserId = second)
+            } ?: AuthCheckResult.Success.NoSuchUsers
         }
     } catch (e: IOException) {
         AuthCheckResult.Error(error = ResultError.StorageError(message = e.message))

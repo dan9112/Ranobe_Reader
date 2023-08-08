@@ -12,8 +12,8 @@ import com.lord_markus.ranobe_reader.auth.data.storage.template.db.dao.ITableUse
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.entities.TableUser
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.entities.TableUserAuthState
 import com.lord_markus.ranobe_reader.auth.data.storage.template.db.entities.TableUserInfo
-import com.lord_markus.ranobe_reader.core.UserInfo
-import com.lord_markus.ranobe_reader.core.UserState
+import com.lord_markus.ranobe_reader.core.models.UserInfo
+import com.lord_markus.ranobe_reader.core.models.UserState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -120,7 +120,7 @@ class DataSource(
             }
     }
 
-    override suspend fun getSignedIn(): Pair<List<UserInfo>, Long> = withContext(defaultDispatcher) {
+    override suspend fun getSignedIn() = withContext(defaultDispatcher) {
         database.runInTransaction(
             body = Callable {
                 tableUserAuthState.getAllSignedIn().map {
@@ -128,7 +128,9 @@ class DataSource(
                         UserInfo(id, state)
                     } ?: throw IOException(context.getString(R.string.caught_user_without_info_id, it))
                 }.let { usersInfo ->
-                    usersInfo to if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
+                    if (usersInfo.isEmpty()) {
+                        null
+                    } else usersInfo to if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
                         sharedPreferences.getLong(CURRENT_USER_ID_KEY, -1L)
                     } else {// никогда не должен срабатывать, страховка!
                         usersInfo.first().id.also { id ->

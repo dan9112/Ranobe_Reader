@@ -1,7 +1,7 @@
 package com.lord_markus.ranobe_reader.auth.data.storage.implementation.db.type_converters
 
 import androidx.room.TypeConverter
-import com.lord_markus.ranobe_reader.core.UserState
+import com.lord_markus.ranobe_reader.core.models.UserState
 
 class UserStateTypeConverter {
     @TypeConverter

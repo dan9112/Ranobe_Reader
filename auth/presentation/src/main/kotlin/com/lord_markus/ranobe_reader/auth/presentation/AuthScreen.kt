@@ -38,12 +38,14 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth.domain.models.*
 import com.lord_markus.ranobe_reader.auth.domain.repository.Repository
+import com.lord_markus.ranobe_reader.auth.domain.use_cases.GetSignedInUsersUseCase
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignInUseCase
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignUpUseCase
 import com.lord_markus.ranobe_reader.auth.presentation.models.AuthScreenState
+import com.lord_markus.ranobe_reader.auth.presentation.models.ExtendedUseCaseState
 import com.lord_markus.ranobe_reader.auth.presentation.models.UseCaseState
-import com.lord_markus.ranobe_reader.core.UserInfo
-import com.lord_markus.ranobe_reader.core.UserState
+import com.lord_markus.ranobe_reader.core.models.UserInfo
+import com.lord_markus.ranobe_reader.core.models.UserState
 import com.vdurmont.emoji.EmojiParser
 
 private val inputRegex = Regex(pattern = "[\\s\n]+")
@@ -52,25 +54,49 @@ private val inputRegex = Regex(pattern = "[\\s\n]+")
 fun AuthScreen(
     getViewModel: @Composable () -> AuthViewModel,
     onBackPressed: @Composable (() -> Unit) -> Unit,
-    onSuccess: @Composable (UserInfo) -> Unit
+    onSuccess: @Composable (Long, List<UserInfo>) -> Unit
 ) {
     val viewModel = getViewModel()
-    val authState by viewModel.authScreenState.collectAsStateWithLifecycle()
 
-    when (authState) {
-        AuthScreenState.SignIn -> SignInScreen(viewModel = viewModel, onSuccess = onSuccess)
-        AuthScreenState.SignUp -> SignUpScreen(
-            viewModel = viewModel,
-            onSuccess = onSuccess,
-            onBackPressed = onBackPressed
-        )
+    val authState by viewModel.authState.collectAsStateWithLifecycle()
+    when (val currentState = authState) {
+        UseCaseState.InProcess -> {
+            // todo: показать индикатор загрузки по центру
+        }
+
+        is UseCaseState.ResultReceived -> {
+            // todo: скрыть индикатор загрузки
+            when (val result = currentState.result) {
+                is AuthCheckResult.Error -> TODO()
+
+                AuthCheckResult.Success.NoSuchUsers -> {
+                    val authScreenState by viewModel.authScreenState.collectAsStateWithLifecycle()
+
+                    when (authScreenState) {
+                        AuthScreenState.SignIn -> SignInScreen(viewModel = viewModel, onSuccess = onSuccess)
+                        AuthScreenState.SignUp -> SignUpScreen(
+                            viewModel = viewModel,
+                            onSuccess = onSuccess,
+                            onBackPressed = onBackPressed
+                        )
+                    }
+
+                }
+
+                is AuthCheckResult.Success.SignedIn -> {
+                    result.run {
+                        onSuccess(currentUserId, signedIn)
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun SignUpScreen(
     viewModel: AuthViewModel,
-    onSuccess: @Composable (UserInfo) -> Unit,
+    onSuccess: @Composable (Long, List<UserInfo>) -> Unit,
     onBackPressed: @Composable (() -> Unit) -> Unit
 ) {
     onBackPressed {
@@ -91,7 +117,7 @@ fun SignUpScreen(
             Log.d("MyLog", "Process continues...")// show indicator
         }
 
-        UseCaseState.Default -> {
+        ExtendedUseCaseState.Default -> {
             Log.d("MyLog", "Process has not been started yet")// hide indicator
         }
 
@@ -115,7 +141,9 @@ fun SignUpScreen(
                     }
 
                     is SignUpResult.Success -> {
-                        onSuccess(result.userInfo)
+                        result.userInfo.let {
+                            onSuccess(it.id, listOf(it))
+                        }
                     }
                 }
             }
@@ -236,7 +264,7 @@ fun SignUpScreen(
 }
 
 @Composable
-fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserInfo) -> Unit) {
+fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (Long, List<UserInfo>) -> Unit) {
     val signInState by viewModel.signInState.collectAsStateWithLifecycle()
 
     var login by rememberSaveable { mutableStateOf(value = "") }
@@ -250,7 +278,7 @@ fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserInfo) -> 
             Log.d("MyLog", "Process continues...")// show indicator
         }
 
-        UseCaseState.Default -> {
+        ExtendedUseCaseState.Default -> {
             Log.d("MyLog", "Process has not been started yet")// hide indicator
         }
 
@@ -273,7 +301,9 @@ fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserInfo) -> 
                     }
 
                     is SignInResult.Success -> {
-                        onSuccess(result.userInfo)
+                        result.userInfo.let {
+                            onSuccess(it.id, listOf(it))
+                        }
                     }
                 }
             }
@@ -385,7 +415,7 @@ fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserInfo) -> 
 fun PreviewSignInScreen() {
     SignInScreen(
         viewModel = viewModelStub,
-        onSuccess = {}
+        onSuccess = { _, _ -> }
     )
 }
 
@@ -394,7 +424,7 @@ fun PreviewSignInScreen() {
 fun PreviewSignUpScreen() {
     SignUpScreen(
         viewModel = viewModelStub,
-        onSuccess = {},
+        onSuccess = { _, _ -> },
         onBackPressed = { }
     )
 }
@@ -402,6 +432,7 @@ fun PreviewSignUpScreen() {
 private val viewModelStub
     get() = AuthViewModel(
         savedStateHandler = SavedStateHandle(),
+        getSignedInUsersUseCase = GetSignedInUsersUseCase(repository = repositoryStub),
         signInUseCase = SignInUseCase(repository = repositoryStub),
         signUpUseCase = SignUpUseCase(repository = repositoryStub)
     )
@@ -409,7 +440,7 @@ private val viewModelStub
 private val repositoryStub
     get() = object : Repository {
         private val userInfoStub = UserInfo(id = 0, state = UserState.User)
-        override suspend fun getSignedInUsers() = AuthCheckResult.Success(signedIn = emptyList(), currentUserId = 0L)
+        override suspend fun getSignedInUsers() = AuthCheckResult.Success.NoSuchUsers
         override suspend fun signIn(login: String, password: String) = SignInResult.Success(userInfo = userInfoStub)
         override suspend fun signOut() = SignOutResult.Success
         override suspend fun signUp(login: String, password: String, state: UserState) =

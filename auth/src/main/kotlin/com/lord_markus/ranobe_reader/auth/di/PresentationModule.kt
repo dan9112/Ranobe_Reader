@@ -7,6 +7,11 @@ import org.koin.dsl.module
 
 internal val presentationModule = module {
     viewModel<AuthViewModel> {
-        AuthViewModel(savedStateHandler = SavedStateHandle(), signInUseCase = get(), signUpUseCase = get())
+        AuthViewModel(
+            savedStateHandler = SavedStateHandle(),
+            getSignedInUsersUseCase = get(),
+            signInUseCase = get(),
+            signUpUseCase = get()
+        )
     }
 }

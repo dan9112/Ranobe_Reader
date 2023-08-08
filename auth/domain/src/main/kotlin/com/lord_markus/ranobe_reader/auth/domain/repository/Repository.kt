@@ -1,7 +1,7 @@
 package com.lord_markus.ranobe_reader.auth.domain.repository
 
 import com.lord_markus.ranobe_reader.auth.domain.models.*
-import com.lord_markus.ranobe_reader.core.UserState
+import com.lord_markus.ranobe_reader.core.models.UserState
 
 interface Repository {
     suspend fun getSignedInUsers(): AuthCheckResult
