@@ -20,26 +20,26 @@ class AuthViewModel(
     private val signUpUseCase: SignUpUseCase
 ) : ViewModel() {
     val authState = savedStateHandler.getStateFlow<UseCaseState<AuthCheckResult>>(
-        key = authStateKey,
+        key = AUTH_STATE_KEY,
         initialValue = UseCaseState.InProcess
     )
     val authScreenState = savedStateHandler.getStateFlow<AuthScreenState>(
-        key = authScreenStateKey,
+        key = AUTH_SCREEN_STATE_KEY,
         initialValue = AuthScreenState.SignIn
     )
     val signInState = savedStateHandler.getStateFlow<ExtendedUseCaseState<SignInResult>>(
-        key = signInStateKey,
+        key = SIGN_IN_STATE_KEY,
         initialValue = ExtendedUseCaseState.Default
     )
     val signUpState = savedStateHandler.getStateFlow<ExtendedUseCaseState<SignUpResult>>(
-        key = signUpStateKey,
+        key = SIGN_UP_STATE_KEY,
         initialValue = ExtendedUseCaseState.Default
     )
 
     fun trySignIn(login: String, password: String) {
         viewModelScope.launch {
-            savedStateHandler[signInStateKey] = UseCaseState.InProcess
-            savedStateHandler[signInStateKey] = UseCaseState.ResultReceived(
+            savedStateHandler[SIGN_IN_STATE_KEY] = UseCaseState.InProcess
+            savedStateHandler[SIGN_IN_STATE_KEY] = UseCaseState.ResultReceived(
                 result = if (login.isBlank() || password.isBlank()) {
                     SignInResult.Error(error = SignInError.IncorrectInput)
                 } else {
@@ -51,14 +51,14 @@ class AuthViewModel(
 
     fun trySignUp(login: String, password: String, password2: String) {
         if (password2 != password) {
-            savedStateHandler[signUpStateKey] =
+            savedStateHandler[SIGN_UP_STATE_KEY] =
                 UseCaseState.ResultReceived(
                     result = SignUpResult.Error(error = SignUpError.IncorrectInput)
                 )
         } else {
             viewModelScope.launch {
-                savedStateHandler[signUpStateKey] = UseCaseState.InProcess
-                savedStateHandler[signUpStateKey] = UseCaseState.ResultReceived(
+                savedStateHandler[SIGN_UP_STATE_KEY] = UseCaseState.InProcess
+                savedStateHandler[SIGN_UP_STATE_KEY] = UseCaseState.ResultReceived(
                     result = if (login.isBlank() || password.isBlank()) {
                         SignUpResult.Error(error = SignUpError.IncorrectInput)
                     } else {
@@ -69,31 +69,31 @@ class AuthViewModel(
         }
     }
 
-    fun getSignedInUsers() {
-        savedStateHandler[authStateKey] = UseCaseState.InProcess
+    private fun getSignedInUsers() {
+        savedStateHandler[AUTH_STATE_KEY] = UseCaseState.InProcess
         viewModelScope.launch {
-            savedStateHandler[authStateKey] = UseCaseState.ResultReceived(getSignedInUsersUseCase())
+            savedStateHandler[AUTH_STATE_KEY] = UseCaseState.ResultReceived(getSignedInUsersUseCase())
         }
     }
 
     fun switchAuthScreenState() {
-        savedStateHandler[authScreenStateKey] =
+        savedStateHandler[AUTH_SCREEN_STATE_KEY] =
             if (authScreenState.value == AuthScreenState.SignIn) AuthScreenState.SignUp else AuthScreenState.SignIn
     }
 
     fun caughtTrigger() {
         val currentAuthState = signInState.value
-        if (currentAuthState is UseCaseState.ResultReceived) savedStateHandler[signInStateKey] =
+        if (currentAuthState is UseCaseState.ResultReceived) savedStateHandler[SIGN_IN_STATE_KEY] =
             currentAuthState.apply {
                 trigger = false
             }
     }
 
     private companion object {
-        const val authScreenStateKey = "auth_screen_state"
-        const val authStateKey = "auth_state"
-        const val signInStateKey = "sign_in_state"
-        const val signUpStateKey = "sign_up_state"
+        const val AUTH_SCREEN_STATE_KEY = "auth_screen_state"
+        const val AUTH_STATE_KEY = "auth_state"
+        const val SIGN_IN_STATE_KEY = "sign_in_state"
+        const val SIGN_UP_STATE_KEY = "sign_up_state"
     }
 
     init {

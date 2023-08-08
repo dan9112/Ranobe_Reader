@@ -49,4 +49,6 @@ dependencies {
     annotationProcessor(androidx.room.annotationProcessor)
     kapt(androidx.room.kapt)
     implementation(androidx.room.ktx)
+
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.0")
 }

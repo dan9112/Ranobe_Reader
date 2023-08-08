@@ -43,17 +43,16 @@ class MainActivity : ComponentActivity() {
                                 onBackPressed = { onBackAction: () -> Unit ->
                                     BackHandler { onBackAction() }
                                 },
-                                onSuccess = { currentId, listUserInfo ->
+                                onSuccess = {
                                     with(receiver = viewModel) {
-                                        setUsersInfo(current = currentId, all = listUserInfo)
+                                        setUsersInfo(currentState = it)
                                     }
                                 }
                             )
                         }
 
                         else -> {
-                            Log.e("MyLog", "Current user id: ${signedIn.first}")
-                            Log.e("MyLog", signedIn.second.joinToString())
+                            Log.e("MyLog", "Current user state: $signedIn")
                             Main.Screen(
                                 onBackPressed = {},
                                 onSuccess = { viewModel.removeUserInfo() }// todo: переработать функцию в дальнейшем!

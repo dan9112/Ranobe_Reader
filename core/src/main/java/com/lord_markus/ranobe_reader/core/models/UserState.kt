@@ -1,13 +1,13 @@
 package com.lord_markus.ranobe_reader.core.models
 
-sealed interface UserState {
-    val number: Short
+import java.io.Serializable
 
+sealed interface UserState : Serializable {
     data object Admin : UserState {
-        override val number: Short = 0
+        private fun readResolve(): Any = Admin
     }
 
     data object User : UserState {
-        override val number: Short = 1
+        private fun readResolve(): Any = User
     }
 }

@@ -54,7 +54,7 @@ private val inputRegex = Regex(pattern = "[\\s\n]+")
 fun AuthScreen(
     getViewModel: @Composable () -> AuthViewModel,
     onBackPressed: @Composable (() -> Unit) -> Unit,
-    onSuccess: @Composable (Long, List<UserInfo>) -> Unit
+    onSuccess: @Composable (UserState) -> Unit
 ) {
     val viewModel = getViewModel()
 
@@ -85,7 +85,7 @@ fun AuthScreen(
 
                 is AuthCheckResult.Success.SignedIn -> {
                     result.run {
-                        onSuccess(currentUserId, signedIn)
+                        onSuccess(signedIn.first { it.id == currentUserId }.state)
                     }
                 }
             }
@@ -96,7 +96,7 @@ fun AuthScreen(
 @Composable
 fun SignUpScreen(
     viewModel: AuthViewModel,
-    onSuccess: @Composable (Long, List<UserInfo>) -> Unit,
+    onSuccess: @Composable (UserState) -> Unit,
     onBackPressed: @Composable (() -> Unit) -> Unit
 ) {
     onBackPressed {
@@ -141,9 +141,7 @@ fun SignUpScreen(
                     }
 
                     is SignUpResult.Success -> {
-                        result.userInfo.let {
-                            onSuccess(it.id, listOf(it))
-                        }
+                        onSuccess(result.userInfo.state)
                     }
                 }
             }
@@ -264,7 +262,7 @@ fun SignUpScreen(
 }
 
 @Composable
-fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (Long, List<UserInfo>) -> Unit) {
+fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserState) -> Unit) {
     val signInState by viewModel.signInState.collectAsStateWithLifecycle()
 
     var login by rememberSaveable { mutableStateOf(value = "") }
@@ -301,9 +299,7 @@ fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (Long, List<Us
                     }
 
                     is SignInResult.Success -> {
-                        result.userInfo.let {
-                            onSuccess(it.id, listOf(it))
-                        }
+                        onSuccess(result.userInfo.state)
                     }
                 }
             }
@@ -415,7 +411,7 @@ fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (Long, List<Us
 fun PreviewSignInScreen() {
     SignInScreen(
         viewModel = viewModelStub,
-        onSuccess = { _, _ -> }
+        onSuccess = { }
     )
 }
 
@@ -424,7 +420,7 @@ fun PreviewSignInScreen() {
 fun PreviewSignUpScreen() {
     SignUpScreen(
         viewModel = viewModelStub,
-        onSuccess = { _, _ -> },
+        onSuccess = { },
         onBackPressed = { }
     )
 }

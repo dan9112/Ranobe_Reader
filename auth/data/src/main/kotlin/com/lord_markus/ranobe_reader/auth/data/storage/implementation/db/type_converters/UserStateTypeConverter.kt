@@ -5,9 +5,11 @@ import com.lord_markus.ranobe_reader.core.models.UserState
 
 class UserStateTypeConverter {
     @TypeConverter
-    fun fromUserState(state: UserState) = state.number
+    fun fromUserState(state: UserState) = state.hashCode()
 
     @TypeConverter
-    fun toUserState(number: Short) =
-        if (number == UserState.Admin.number) UserState.Admin else UserState.User
+    fun toUserState(hashCode: Int): UserState = UserState::class
+        .sealedSubclasses
+        .first { it.hashCode() == hashCode }
+        .objectInstance!!
 }
