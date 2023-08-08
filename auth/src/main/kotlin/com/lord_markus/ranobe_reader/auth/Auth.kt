@@ -8,6 +8,10 @@ import org.koin.androidx.compose.koinViewModel
 
 data object Auth {
     @Composable
-    fun Screen(onBack: @Composable ((() -> Unit)?) -> Unit, onSuccess: @Composable (UserInfo) -> Unit) =
-        AuthScreen(getViewModel = { koinViewModel<AuthViewModel>() }, onBack = onBack, onSuccess = onSuccess)
+    fun Screen(onBackPressed: @Composable (() -> Unit) -> Unit, onSuccess: @Composable (UserInfo) -> Unit) =
+        AuthScreen(
+            getViewModel = { koinViewModel<AuthViewModel>() },
+            onBackPressed = onBackPressed,
+            onSuccess = onSuccess
+        )
 }

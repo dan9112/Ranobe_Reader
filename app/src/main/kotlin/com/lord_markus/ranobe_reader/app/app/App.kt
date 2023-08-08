@@ -2,7 +2,7 @@ package com.lord_markus.ranobe_reader.app.app
 
 import android.app.Application
 import com.lord_markus.ranobe_reader.auth.app.AuthApp
-import com.lord_markus.ranobe_reader.koin_core.app.KoinAppBase
+import com.lord_markus.ranobe_reader.koin_core.models.KoinAppBase
 
 class App : Application() {
     private val koinApp = KoinAppBase(AuthApp())

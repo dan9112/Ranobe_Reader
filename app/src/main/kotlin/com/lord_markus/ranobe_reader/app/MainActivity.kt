@@ -32,10 +32,8 @@ class MainActivity : ComponentActivity() {
                     //  - добавить переход между окнами
                     //  - добавить Hilt в модуль главного окна
                     Auth.Screen(
-                        onBack = { block: (() -> Unit)? ->
-                            block?.let {
-                                BackHandler { it() }
-                            }
+                        onBackPressed = { onBackAction: () -> Unit ->
+                            BackHandler { onBackAction() }
                         },
                         onSuccess = { userInfo ->
                             Toast.makeText(LocalContext.current, userInfo.toString(), Toast.LENGTH_SHORT).show()

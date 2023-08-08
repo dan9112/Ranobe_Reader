@@ -1,4 +1,4 @@
-package com.lord_markus.ranobe_reader.koin_core.app
+package com.lord_markus.ranobe_reader.koin_core.models
 
 import org.koin.core.KoinApplication
 

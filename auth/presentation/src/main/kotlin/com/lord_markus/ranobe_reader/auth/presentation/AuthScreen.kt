@@ -51,7 +51,7 @@ private val inputRegex = Regex(pattern = "[\\s\n]+")
 @Composable
 fun AuthScreen(
     getViewModel: @Composable () -> AuthViewModel,
-    onBack: @Composable ((() -> Unit)?) -> Unit,
+    onBackPressed: @Composable (() -> Unit) -> Unit,
     onSuccess: @Composable (UserInfo) -> Unit
 ) {
     val viewModel = getViewModel()
@@ -59,7 +59,11 @@ fun AuthScreen(
 
     when (authState) {
         AuthScreenState.SignIn -> SignInScreen(viewModel = viewModel, onSuccess = onSuccess)
-        AuthScreenState.SignUp -> SignUpScreen(viewModel = viewModel, onSuccess = onSuccess, onBack = onBack)
+        AuthScreenState.SignUp -> SignUpScreen(
+            viewModel = viewModel,
+            onSuccess = onSuccess,
+            onBackPressed = onBackPressed
+        )
     }
 }
 
@@ -67,9 +71,9 @@ fun AuthScreen(
 fun SignUpScreen(
     viewModel: AuthViewModel,
     onSuccess: @Composable (UserInfo) -> Unit,
-    onBack: @Composable ((() -> Unit)?) -> Unit
+    onBackPressed: @Composable (() -> Unit) -> Unit
 ) {
-    onBack {
+    onBackPressed {
         viewModel.switchAuthScreenState()
     }
 
@@ -391,7 +395,7 @@ fun PreviewSignUpScreen() {
     SignUpScreen(
         viewModel = viewModelStub,
         onSuccess = {},
-        onBack = { }
+        onBackPressed = { }
     )
 }
 
