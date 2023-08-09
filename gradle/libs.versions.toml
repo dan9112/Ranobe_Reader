@@ -1,9 +1,8 @@
 [versions]
+dagger = "2.47"
 hilt-android = "2.47"
-hilt-android-compiler = "2.47"
 hilt-navigation-compose = "1.0.0"
 junit4 = "4.13.2"
-koin = "3.4.3"
 material = "1.9.0"
 org-jetbrains-kotlin-jvm = "1.9.0"
 agp = "8.0.0"
@@ -11,14 +10,12 @@ org-jetbrains-kotlin-android = "1.8.10"
 emoji-java = "5.1.1"
 
 [libraries]
+dagger = { group = "com.google.dagger", name = "dagger", version.ref = "dagger" }
+dagger-compiler = { group = "com.google.dagger", name = "dagger-compiler", version.ref = "dagger" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt-android" }
-hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt-android-compiler" }
+hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt-android" }
 hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
-koin-android-compat = { group = "io.insert-koin", name = "koin-android-compat", version.ref = "koin" }
-koin-androidx-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koin" }
-koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
-koin-test = { group = "io.insert-koin", name = "koin-test", version.ref = "koin" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 emoji-java = { group = "com.vdurmont", name = "emoji-java", version.ref = "emoji-java" }

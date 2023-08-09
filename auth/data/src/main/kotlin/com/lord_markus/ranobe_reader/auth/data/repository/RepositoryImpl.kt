@@ -6,10 +6,9 @@ import com.lord_markus.ranobe_reader.auth.domain.repository.Repository
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import java.io.IOException
+import javax.inject.Inject
 
-class RepositoryImpl(
-    private val dataSource: IDataSource
-) : Repository {
+class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) : Repository {
     override suspend fun getSignedInUsers(): AuthCheckResult = try {
         dataSource.getSignedIn().let { signedInUsers ->
             signedInUsers?.run {

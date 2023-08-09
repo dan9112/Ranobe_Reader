@@ -19,8 +19,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.concurrent.Callable
+import javax.inject.Inject
 
-class DataSource(
+class DataSource @Inject constructor(
     private val tableUsersDao: ITableUserDao,
     private val tableUserInfoDao: ITableUserInfoDao,
     private val tableUserAuthState: ITableUserAuthStateDao,

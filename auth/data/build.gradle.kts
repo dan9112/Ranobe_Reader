@@ -50,5 +50,6 @@ dependencies {
     kapt(androidx.room.kapt)
     implementation(androidx.room.ktx)
 
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.0")
+    implementation(libs.dagger)
+    kapt(libs.dagger.compiler)
 }

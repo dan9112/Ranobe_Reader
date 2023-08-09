@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
     kotlin("kapt")
-    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -51,10 +50,6 @@ dependencies {
     kapt(androidx.room.kapt)
     implementation(androidx.room.ktx)
 
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
-}
-
-kapt {
-    correctErrorTypes = true
+    implementation(libs.dagger)
+    kapt(libs.dagger.compiler)
 }

@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
     kotlin("kapt")
+    id("com.google.dagger.hilt.android")
     id("kotlin-parcelize")
 }
 
@@ -59,7 +60,15 @@ dependencies {
     androidTestImplementation(androidx.test.espresso.core)
 
     implementation(compose.lifecycle.runtime)
+    implementation(libs.hilt.navigation.compose)
     implementation(androidx.bundles.lifecycle)
 
     implementation(libs.emoji.java)
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+}
+
+kapt {
+    correctErrorTypes = true
 }

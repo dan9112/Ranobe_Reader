@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth.domain.models.*
@@ -52,11 +53,10 @@ private val inputRegex = Regex(pattern = "[\\s\n]+")
 
 @Composable
 fun AuthScreen(
-    getViewModel: @Composable () -> AuthViewModel,
+    viewModel: AuthViewModel = hiltViewModel(),
     onBackPressed: @Composable (() -> Unit) -> Unit,
     onSuccess: @Composable (UserState) -> Unit
 ) {
-    val viewModel = getViewModel()
 
     val authState by viewModel.authState.collectAsStateWithLifecycle()
     when (val currentState = authState) {

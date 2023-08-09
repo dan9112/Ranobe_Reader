@@ -54,7 +54,6 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":design"))
 
-    implementation(project(":koin_core"))
     implementation(project(":auth"))
     implementation(project(":main"))
 

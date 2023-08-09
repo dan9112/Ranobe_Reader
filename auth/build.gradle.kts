@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
     kotlin("kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -43,8 +44,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":koin_core"))
-
     implementation(project(":auth:presentation"))
     implementation(project(":auth:domain"))
     implementation(project(":auth:data"))
@@ -56,9 +55,10 @@ dependencies {
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
 
-    implementation(libs.koin.core)
-    testImplementation(libs.koin.test)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+}
 
-    implementation(libs.koin.android.compat)
-    implementation(libs.koin.androidx.compose)
+kapt {
+    correctErrorTypes = true
 }

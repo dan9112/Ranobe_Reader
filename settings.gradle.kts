@@ -30,7 +30,6 @@ rootProject.name = "Ranobe Reader"
 include(":app")
 include(":core")
 include(":design")
-include(":koin_core")
 include(":auth", ":auth:presentation", ":auth:domain", ":auth:data")
 include(":main", ":main:presentation", ":main:domain", ":main:data")
  

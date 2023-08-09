@@ -11,9 +11,12 @@ import com.lord_markus.ranobe_reader.auth.presentation.models.AuthScreenState
 import com.lord_markus.ranobe_reader.auth.presentation.models.ExtendedUseCaseState
 import com.lord_markus.ranobe_reader.auth.presentation.models.UseCaseState
 import com.lord_markus.ranobe_reader.core.models.UserState
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class AuthViewModel(
+@HiltViewModel
+class AuthViewModel @Inject constructor(
     private val savedStateHandler: SavedStateHandle,
     private val getSignedInUsersUseCase: GetSignedInUsersUseCase,
     private val signInUseCase: SignInUseCase,
