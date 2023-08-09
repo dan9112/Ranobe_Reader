@@ -38,7 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth.domain.models.*
-import com.lord_markus.ranobe_reader.auth.domain.repository.Repository
+import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.GetSignedInUsersUseCase
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignInUseCase
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignUpUseCase
@@ -428,13 +428,13 @@ fun PreviewSignUpScreen() {
 private val viewModelStub
     get() = AuthViewModel(
         savedStateHandler = SavedStateHandle(),
-        getSignedInUsersUseCase = GetSignedInUsersUseCase(repository = repositoryStub),
-        signInUseCase = SignInUseCase(repository = repositoryStub),
-        signUpUseCase = SignUpUseCase(repository = repositoryStub)
+        getSignedInUsersUseCase = GetSignedInUsersUseCase(authRepository = authRepositoryStub),
+        signInUseCase = SignInUseCase(authRepository = authRepositoryStub),
+        signUpUseCase = SignUpUseCase(authRepository = authRepositoryStub)
     )
 
-private val repositoryStub
-    get() = object : Repository {
+private val authRepositoryStub
+    get() = object : AuthRepository {
         private val userInfoStub = UserInfo(id = 0, state = UserState.User)
         override suspend fun getSignedInUsers() = AuthCheckResult.Success.NoSuchUsers
         override suspend fun signIn(login: String, password: String) = SignInResult.Success(userInfo = userInfoStub)

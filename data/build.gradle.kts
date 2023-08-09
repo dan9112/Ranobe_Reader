@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "${AndroidConfig.BASE_PACKAGE}.main"
+    namespace = "${AndroidConfig.BASE_PACKAGE}.data"
     compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {
@@ -20,8 +20,11 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
@@ -31,19 +34,11 @@ android {
     kotlinOptions {
         jvmTarget = AndroidConfig.JAVA_VERSION.toString()
     }
-    // Не работает Jetpack Compose без функций ниже
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
-    }
 }
 
 dependencies {
-    implementation(project(":main:presentation"))
+    implementation(project(":auth:domain"))
     implementation(project(":main:domain"))
-    implementation(project(":data"))
 
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
@@ -51,6 +46,11 @@ dependencies {
     testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
+
+    implementation(androidx.room.runtime)
+    annotationProcessor(androidx.room.annotationProcessor)
+    kapt(androidx.room.kapt)
+    implementation(androidx.room.ktx)
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)

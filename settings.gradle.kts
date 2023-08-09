@@ -30,6 +30,7 @@ rootProject.name = "Ranobe Reader"
 include(":app")
 include(":core")
 include(":design")
-include(":auth", ":auth:presentation", ":auth:domain", ":auth:data")
-include(":main", ":main:presentation", ":main:domain", ":main:data")
+include(":data")
+include(":auth", ":auth:presentation", ":auth:domain")
+include(":main", ":main:presentation", ":main:domain")
  

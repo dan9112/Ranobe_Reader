@@ -1,6 +1,6 @@
 package com.lord_markus.ranobe_reader.auth.di
 
-import com.lord_markus.ranobe_reader.auth.domain.repository.Repository
+import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.*
 import dagger.Module
 import dagger.Provides
@@ -11,20 +11,20 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 object DomainModule {
     @Provides
-    fun getGetSignedInUsersUseCase(repository: Repository) = GetSignedInUsersUseCase(repository)
+    fun getGetSignedInUsersUseCase(authRepository: AuthRepository) = GetSignedInUsersUseCase(authRepository)
 
     @Provides
-    fun getRemoveAccountUseCase(repository: Repository) = RemoveAccountUseCase(repository)
+    fun getRemoveAccountUseCase(authRepository: AuthRepository) = RemoveAccountUseCase(authRepository)
 
     @Provides
-    fun getSetCurrentUseCase(repository: Repository) = SetCurrentUseCase(repository)
+    fun getSetCurrentUseCase(authRepository: AuthRepository) = SetCurrentUseCase(authRepository)
 
     @Provides
-    fun getSignInUseCase(repository: Repository) = SignInUseCase(repository)
+    fun getSignInUseCase(authRepository: AuthRepository) = SignInUseCase(authRepository)
 
     @Provides
-    fun getSignOutUseCase(repository: Repository) = SignOutUseCase(repository)
+    fun getSignOutUseCase(authRepository: AuthRepository) = SignOutUseCase(authRepository)
 
     @Provides
-    fun getSignUpUseCase(repository: Repository) = SignUpUseCase(repository)
+    fun getSignUpUseCase(authRepository: AuthRepository) = SignUpUseCase(authRepository)
 }
