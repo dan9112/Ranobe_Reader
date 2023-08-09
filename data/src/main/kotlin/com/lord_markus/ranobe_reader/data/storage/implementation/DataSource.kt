@@ -3,6 +3,7 @@ package com.lord_markus.ranobe_reader.data.storage.implementation
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import androidx.annotation.StringRes
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.data.R
@@ -74,16 +75,23 @@ class DataSource @Inject constructor(
         )
     }
 
-    override suspend fun signOut(): List<UserInfo> = withContext(defaultDispatcher) {
+    override suspend fun signOut() = doSomethingWithUserAndGetSignedInList(R.string.failed_to_sign_out) {
+        tableUserAuthState.changeState(id = it, state = false)
+    }
+
+    private suspend fun doSomethingWithUserAndGetSignedInList(
+        @StringRes stringResIfNotDone: Int,
+        action: (Long) -> Int
+    ) = withContext(defaultDispatcher) {
         database.runInTransaction(
             body = Callable {
                 if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
                     val id = sharedPreferences.getLong(CURRENT_USER_ID_KEY, 1L)
-                    if (tableUserAuthState.removeUserById(id) == 0) {
+                    if (action(id) == 0) {
                         updateSharedPreferences {
                             remove(CURRENT_USER_ID_KEY)
                         }
-                        throw IOException(context.getString(R.string.no_user_with_id, id))
+                        throw IOException(context.getString(stringResIfNotDone, id))
                     } else {
                         tableUserAuthState.getAllSignedIn().map {
                             tableUserInfoDao.getInfoById(id = it)?.run {
@@ -102,6 +110,10 @@ class DataSource @Inject constructor(
                 } else throw IOException(context.getString(R.string.no_signed_in_users))
             }
         )
+    }
+
+    override suspend fun signOutWithRemove() = doSomethingWithUserAndGetSignedInList(R.string.no_user_with_id) {
+        tableUsersDao.removeUser(userId = it)
     }
 
     override suspend fun addUser(
@@ -123,14 +135,6 @@ class DataSource @Inject constructor(
                 }
             }
         )
-    }
-
-    override suspend fun removeUser(id: Long) = withContext(defaultDispatcher) {
-        tableUsersDao
-            .removeUser(userId = id)
-            .updateSharedPreferences {
-                remove(CURRENT_USER_ID_KEY)
-            }
     }
 
     override suspend fun getSignedIn() = withContext(defaultDispatcher) {

@@ -7,7 +7,7 @@ interface IDataSource {
     suspend fun signIn(login: String, password: String): UserInfo?
     suspend fun signOut(): List<UserInfo>
     suspend fun addUser(login: String, password: String, state: UserState): Long?
-    suspend fun removeUser(id: Long): Int
+    suspend fun signOutWithRemove(): List<UserInfo>
     suspend fun getSignedIn(): Pair<List<UserInfo>, Long>?
     suspend fun setCurrent(id: Long): Boolean?
 }

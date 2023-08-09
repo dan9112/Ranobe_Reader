@@ -20,4 +20,7 @@ interface TableUserAuthStateDao : ITableUserAuthStateDao {
 
     @Query("Delete from users_auth_state where _id = :id")
     override fun removeUserById(id: Long): Int
+
+    @Query("Update users_auth_state set auth_state = :state where _id = :id")
+    override fun changeState(id: Long, state: Boolean): Int
 }

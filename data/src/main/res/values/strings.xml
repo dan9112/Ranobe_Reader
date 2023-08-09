@@ -3,6 +3,7 @@
     <string name="couldn_t_get_user_info_for_id">Couldn\'t get user info for id = %1$d</string>
     <string name="couldn_t_update_signed_in_list_for_id">Couldn\'t update signed in list for id = %1$d</string>
     <string name="no_user_with_id">No user with id = %1$d!</string>
+    <string name="failed_to_sign_out">Failed to sign out as user with id = %1$d!</string>
     <string name="no_signed_in_users">No signed in users!</string>
     <string name="caught_user_without_info_id">Caught user without info: id = %1$d!</string>
 </resources>

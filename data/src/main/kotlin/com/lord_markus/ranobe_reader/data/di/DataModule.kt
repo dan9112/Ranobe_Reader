@@ -44,7 +44,7 @@ object DataModule {
         tableUserInfoDao: ITableUserInfoDao,
         tableUserAuthState: ITableUserAuthStateDao,
         database: IAppDatabase,
-        @ApplicationContext context: Context,
+        @ApplicationContext context: Context
     ): IDataSource = DataSource(tableUsersDao, tableUserInfoDao, tableUserAuthState, database, context)
 
     @Singleton

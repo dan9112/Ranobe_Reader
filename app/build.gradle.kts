@@ -59,6 +59,7 @@ dependencies {
 
     implementation(androidx.core.ktx)
     implementation(androidx.lifecycle.runtimektx)
+    implementation(androidx.lifecycle.viewmodel.compose)
     implementation(compose.activity)
     implementation(compose.lifecycle.runtime)
     testImplementation(libs.junit4)

@@ -7,4 +7,5 @@ interface ITableUserAuthStateDao {
     fun getAllSignedIn(): List<Long>
     fun addState(userState: TableUserAuthState): Long?
     fun removeUserById(id: Long): Int
+    fun changeState(id: Long, state: Boolean): Int
 }

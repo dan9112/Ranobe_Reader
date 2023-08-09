@@ -8,8 +8,8 @@ import com.lord_markus.ranobe_reader.auth.domain.use_cases.GetSignedInUsersUseCa
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignInUseCase
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignUpUseCase
 import com.lord_markus.ranobe_reader.auth.presentation.models.AuthScreenState
-import com.lord_markus.ranobe_reader.auth.presentation.models.ExtendedUseCaseState
-import com.lord_markus.ranobe_reader.auth.presentation.models.UseCaseState
+import com.lord_markus.ranobe_reader.auth.presentation.models.AuthUseCaseState
+import com.lord_markus.ranobe_reader.auth.presentation.models.ExtendedAuthUseCaseState
 import com.lord_markus.ranobe_reader.core.models.UserState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -22,27 +22,27 @@ class AuthViewModel @Inject constructor(
     private val signInUseCase: SignInUseCase,
     private val signUpUseCase: SignUpUseCase
 ) : ViewModel() {
-    val authState = savedStateHandler.getStateFlow<UseCaseState<AuthCheckResultAuth>>(
+    val authState = savedStateHandler.getStateFlow<ExtendedAuthUseCaseState<AuthCheckResult>>(
         key = AUTH_STATE_KEY,
-        initialValue = UseCaseState.InProcess
+        initialValue = ExtendedAuthUseCaseState.Default
     )
     val authScreenState = savedStateHandler.getStateFlow<AuthScreenState>(
         key = AUTH_SCREEN_STATE_KEY,
         initialValue = AuthScreenState.SignIn
     )
-    val signInState = savedStateHandler.getStateFlow<ExtendedUseCaseState<SignInResultAuth>>(
+    val signInState = savedStateHandler.getStateFlow<ExtendedAuthUseCaseState<SignInResultAuth>>(
         key = SIGN_IN_STATE_KEY,
-        initialValue = ExtendedUseCaseState.Default
+        initialValue = ExtendedAuthUseCaseState.Default
     )
-    val signUpState = savedStateHandler.getStateFlow<ExtendedUseCaseState<SignUpResultAuth>>(
+    val signUpState = savedStateHandler.getStateFlow<ExtendedAuthUseCaseState<SignUpResultAuth>>(
         key = SIGN_UP_STATE_KEY,
-        initialValue = ExtendedUseCaseState.Default
+        initialValue = ExtendedAuthUseCaseState.Default
     )
 
     fun trySignIn(login: String, password: String) {
         viewModelScope.launch {
-            savedStateHandler[SIGN_IN_STATE_KEY] = UseCaseState.InProcess
-            savedStateHandler[SIGN_IN_STATE_KEY] = UseCaseState.ResultReceived(
+            savedStateHandler[SIGN_IN_STATE_KEY] = AuthUseCaseState.InProcess
+            savedStateHandler[SIGN_IN_STATE_KEY] = AuthUseCaseState.ResultReceived(
                 result = if (login.isBlank() || password.isBlank()) {
                     SignInResultAuth.Error(error = SignInError.IncorrectInput)
                 } else {
@@ -55,13 +55,13 @@ class AuthViewModel @Inject constructor(
     fun trySignUp(login: String, password: String, password2: String) {
         if (password2 != password) {
             savedStateHandler[SIGN_UP_STATE_KEY] =
-                UseCaseState.ResultReceived(
+                AuthUseCaseState.ResultReceived(
                     result = SignUpResultAuth.Error(error = SignUpError.IncorrectInput)
                 )
         } else {
             viewModelScope.launch {
-                savedStateHandler[SIGN_UP_STATE_KEY] = UseCaseState.InProcess
-                savedStateHandler[SIGN_UP_STATE_KEY] = UseCaseState.ResultReceived(
+                savedStateHandler[SIGN_UP_STATE_KEY] = AuthUseCaseState.InProcess
+                savedStateHandler[SIGN_UP_STATE_KEY] = AuthUseCaseState.ResultReceived(
                     result = if (login.isBlank() || password.isBlank()) {
                         SignUpResultAuth.Error(error = SignUpError.IncorrectInput)
                     } else {
@@ -72,10 +72,10 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun getSignedInUsers() {
-        savedStateHandler[AUTH_STATE_KEY] = UseCaseState.InProcess
+    fun getSignedInUsers() {
         viewModelScope.launch {
-            savedStateHandler[AUTH_STATE_KEY] = UseCaseState.ResultReceived(getSignedInUsersUseCase())
+            savedStateHandler[AUTH_STATE_KEY] = AuthUseCaseState.InProcess
+            savedStateHandler[AUTH_STATE_KEY] = AuthUseCaseState.ResultReceived(getSignedInUsersUseCase())
         }
     }
 
@@ -86,10 +86,14 @@ class AuthViewModel @Inject constructor(
 
     fun caughtTrigger() {
         val currentAuthState = signInState.value
-        if (currentAuthState is UseCaseState.ResultReceived) savedStateHandler[SIGN_IN_STATE_KEY] =
+        if (currentAuthState is AuthUseCaseState.ResultReceived) savedStateHandler[SIGN_IN_STATE_KEY] =
             currentAuthState.apply {
                 trigger = false
             }
+    }
+
+    fun resetAuthState() {
+        savedStateHandler[AUTH_STATE_KEY] = ExtendedAuthUseCaseState.Default
     }
 
     private companion object {
@@ -97,9 +101,5 @@ class AuthViewModel @Inject constructor(
         const val AUTH_STATE_KEY = "auth_state"
         const val SIGN_IN_STATE_KEY = "sign_in_state"
         const val SIGN_UP_STATE_KEY = "sign_up_state"
-    }
-
-    init {
-        getSignedInUsers()
     }
 }

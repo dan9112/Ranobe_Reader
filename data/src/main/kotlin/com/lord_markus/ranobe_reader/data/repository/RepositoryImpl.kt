@@ -5,20 +5,24 @@ import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.data.storage.template.db.IDataSource
-import com.lord_markus.ranobe_reader.main.domain.models.*
+import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
+import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentError
+import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
+import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.domain.repository.MainRepository
 import java.io.IOException
 import javax.inject.Inject
 
-class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) : AuthRepository, MainRepository {
-    override suspend fun getSignedInUsers(): AuthCheckResultAuth = try {
+class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
+    AuthRepository, MainRepository {
+    override suspend fun getSignedInUsers(): AuthCheckResult = try {
         dataSource.getSignedIn().let { signedInUsers ->
             signedInUsers?.run {
-                AuthCheckResultAuth.Success.SignedIn(signedIn = first, currentUserId = second)
-            } ?: AuthCheckResultAuth.Success.NoSuchUsers
+                AuthCheckResult.Success.SignedIn(signedIn = first, currentUserId = second)
+            } ?: AuthCheckResult.Success.NoSuchUsers
         }
     } catch (e: IOException) {
-        AuthCheckResultAuth.Error(error = AuthUseCaseError.StorageError(message = e.message))
+        AuthCheckResult.Error(error = AuthUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun signIn(login: String, password: String) = try {
@@ -46,14 +50,10 @@ class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) : 
         SignUpResultAuth.Error(error = AuthUseCaseError.StorageError(message = e.message))
     }
 
-    override suspend fun removeAccount(userId: Long) = try {
-        if (dataSource.removeUser(userId) > 0) {
-            RemoveAccountResultMain.Success
-        } else {
-            RemoveAccountResultMain.Error(error = RemoveAccountError.NoSuchUser)
-        }
+    override suspend fun signOutWithRemove() = try {
+        SignOutResultMain.Success(signedIn = dataSource.signOutWithRemove())
     } catch (e: IOException) {
-        RemoveAccountResultMain.Error(error = MainUseCaseError.StorageError(message = e.message))
+        SignOutResultMain.Error(error = MainUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun setCurrent(id: Long) = try {

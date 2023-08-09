@@ -37,15 +37,17 @@ class MainActivity : ComponentActivity() {
                     //  - добавить навигацию
                     //  - добавить переход между окнами
                     //  - добавить Hilt в модуль главного окна
-                    when (val signedIn = state.value) {
-                        null -> {
+                    val signedIn = state.value
+                    when {
+                        signedIn.isEmpty() -> {
                             Auth.Screen(
+                                modifier = Modifier.fillMaxSize(),
                                 onBackPressed = { onBackAction: () -> Unit ->
                                     BackHandler { onBackAction() }
                                 },
                                 onSuccess = {
                                     with(receiver = viewModel) {
-                                        setUsersInfo(currentState = it)
+                                        updateSignedIn(newList = it)
                                     }
                                 }
                             )
@@ -54,8 +56,9 @@ class MainActivity : ComponentActivity() {
                         else -> {
                             Log.e("MyLog", "Current user state: $signedIn")
                             Main.Screen(
-                                onBackPressed = {},
-                                goOut = { viewModel.removeUserInfo() }// todo: переработать функцию в дальнейшем!
+                                modifier = Modifier.fillMaxSize(),
+                                users = signedIn,
+                                updateSignedIn = { viewModel.updateSignedIn(newList = it) }// todo: переработать функцию в дальнейшем!
                             )
                         }
                     }
