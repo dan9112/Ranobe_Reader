@@ -58,79 +58,75 @@ private val inputRegex = Regex(pattern = "[\\s\n]+")
 fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onBackPressed: @Composable (() -> Unit) -> Unit,
-    onSuccess: @Composable (UserState) -> Unit
-) {
-    ConstraintLayout {
-        val (indicator, content) = createRefs()
-        val progressBarVisible = rememberSaveable { mutableStateOf(true) }
+    onSuccess: (UserState) -> Unit
+) = ConstraintLayout {
+    val (indicator, content) = createRefs()
+    val progressBarVisible = rememberSaveable { mutableStateOf(true) }
 
-        Box(
-            modifier = Modifier.constrainAs(content) {
-                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-                height = Dimension.fillToConstraints
-                width = Dimension.fillToConstraints
+    Box(
+        modifier = Modifier.constrainAs(content) {
+            linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+            height = Dimension.fillToConstraints
+            width = Dimension.fillToConstraints
+        }
+    ) {
+        val authState by viewModel.authState.collectAsStateWithLifecycle()
+        when (val currentState = authState) {
+            UseCaseState.InProcess -> {
+                progressBarVisible.value = true
             }
-        ) {
-            val authState by viewModel.authState.collectAsStateWithLifecycle()
-            when (val currentState = authState) {
-                UseCaseState.InProcess -> {
-                    progressBarVisible.value = true
-                }
 
-                is UseCaseState.ResultReceived -> {
-                    progressBarVisible.value = false
-                    when (val result = currentState.result) {
-                        is AuthCheckResult.Error -> TODO(reason = "Показать ошибку и закрыть приложение")
+            is UseCaseState.ResultReceived -> {
+                progressBarVisible.value = false
+                when (val result = currentState.result) {
+                    is AuthCheckResultAuth.Error -> TODO(reason = "Показать ошибку и закрыть приложение")
 
-                        AuthCheckResult.Success.NoSuchUsers -> {
-                            val authScreenState by viewModel.authScreenState.collectAsStateWithLifecycle()
-                            val switchIndicator = { state: Boolean ->
-                                progressBarVisible.value = state
-                            }
-
-                            when (authScreenState) {
-                                AuthScreenState.SignIn -> SignInScreen(
-                                    viewModel = viewModel,
-                                    onSuccess = onSuccess,
-                                    switchIndicator = switchIndicator
-                                )
-
-                                AuthScreenState.SignUp -> SignUpScreen(
-                                    viewModel = viewModel,
-                                    onSuccess = onSuccess,
-                                    onBackPressed = onBackPressed,
-                                    switchIndicator = switchIndicator
-                                )
-                            }
-
+                    AuthCheckResultAuth.Success.NoSuchUsers -> {
+                        val authScreenState by viewModel.authScreenState.collectAsStateWithLifecycle()
+                        val switchIndicator = { state: Boolean ->
+                            progressBarVisible.value = state
                         }
 
-                        is AuthCheckResult.Success.SignedIn -> {
-                            result.run {
-                                onSuccess(signedIn.first { it.id == currentUserId }.state)
-                            }
+                        when (authScreenState) {
+                            AuthScreenState.SignIn -> SignInScreen(
+                                viewModel = viewModel,
+                                onSuccess = onSuccess,
+                                switchIndicator = switchIndicator
+                            )
+
+                            AuthScreenState.SignUp -> SignUpScreen(
+                                viewModel = viewModel,
+                                onSuccess = onSuccess,
+                                onBackPressed = onBackPressed,
+                                switchIndicator = switchIndicator
+                            )
+                        }
+
+                    }
+
+                    is AuthCheckResultAuth.Success.SignedIn -> {
+                        result.run {
+                            onSuccess(signedIn.first { it.id == currentUserId }.state)
                         }
                     }
                 }
             }
         }
-
-        CircularProgressIndicator(
-            modifier = Modifier
-                .constrainAs(indicator) {
-                    linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-                    height = Dimension.wrapContent
-                    width = Dimension.wrapContent
-                }
-                .alpha(if (progressBarVisible.value) 1f else 0f)
-        )
     }
+
+    CircularProgressIndicator(
+        modifier = Modifier
+            .constrainAs(indicator) {
+                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+            }
+            .alpha(if (progressBarVisible.value) 1f else 0f)
+    )
 }
 
 @Composable
 fun SignUpScreen(
     viewModel: AuthViewModel,
-    onSuccess: @Composable (UserState) -> Unit,
+    onSuccess: (UserState) -> Unit,
     onBackPressed: @Composable (() -> Unit) -> Unit,
     switchIndicator: (Boolean) -> Unit
 ) {
@@ -164,7 +160,7 @@ fun SignUpScreen(
                 viewModel.caughtTrigger()
                 Log.d("MyLog", "Process finished")
                 when (val result = currentState.result) {
-                    is SignUpResult.Error -> {
+                    is SignUpResultAuth.Error -> {
                         errorColor = true
                         Toast.makeText(
                             LocalContext.current,
@@ -172,13 +168,13 @@ fun SignUpScreen(
                                 SignUpError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
                                 SignUpError.LoginAlreadyInUse -> stringResource(R.string.login_is_already_in_use)
                                 SignUpError.PasswordRequirements -> stringResource(R.string.invalid_password)
-                                is ResultError.StorageError -> error.message
+                                is AuthUseCaseError.StorageError -> error.message
                             },
                             Toast.LENGTH_SHORT
                         ).show()
                     }
 
-                    is SignUpResult.Success -> {
+                    is SignUpResultAuth.Success -> {
                         onSuccess(result.userInfo.state)
                     }
                 }
@@ -302,7 +298,7 @@ fun SignUpScreen(
 @Composable
 fun SignInScreen(
     viewModel: AuthViewModel,
-    onSuccess: @Composable (UserState) -> Unit,
+    onSuccess: (UserState) -> Unit,
     switchIndicator: (Boolean) -> Unit
 ) {
     val signInState by viewModel.signInState.collectAsStateWithLifecycle()
@@ -330,20 +326,20 @@ fun SignInScreen(
                 viewModel.caughtTrigger()
                 Log.d("MyLog", "Process finished")
                 when (val result = currentState.result) {
-                    is SignInResult.Error -> {
+                    is SignInResultAuth.Error -> {
                         errorColor = true
                         Toast.makeText(
                             LocalContext.current,
                             when (val error = result.error) {
                                 SignInError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
                                 SignInError.NoSuchUser -> stringResource(id = R.string.no_such_user)
-                                is ResultError.StorageError -> error.message
+                                is AuthUseCaseError.StorageError -> error.message
                             },
                             Toast.LENGTH_SHORT
                         ).show()
                     }
 
-                    is SignInResult.Success -> {
+                    is SignInResultAuth.Success -> {
                         onSuccess(result.userInfo.state)
                     }
                 }
@@ -483,12 +479,8 @@ private val viewModelStub
 private val authRepositoryStub
     get() = object : AuthRepository {
         private val userInfoStub = UserInfo(id = 0, state = UserState.User)
-        override suspend fun getSignedInUsers() = AuthCheckResult.Success.NoSuchUsers
-        override suspend fun signIn(login: String, password: String) = SignInResult.Success(userInfo = userInfoStub)
-        override suspend fun signOut() = SignOutResult.Success
+        override suspend fun getSignedInUsers() = AuthCheckResultAuth.Success.NoSuchUsers
+        override suspend fun signIn(login: String, password: String) = SignInResultAuth.Success(userInfo = userInfoStub)
         override suspend fun signUp(login: String, password: String, state: UserState) =
-            SignUpResult.Success(userInfo = userInfoStub)
-
-        override suspend fun removeAccount(userId: Long) = RemoveAccountResult.Success
-        override suspend fun setCurrent(id: Long) = SetCurrentResult.Success
+            SignUpResultAuth.Success(userInfo = userInfoStub)
     }

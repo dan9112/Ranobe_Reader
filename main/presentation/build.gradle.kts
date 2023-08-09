@@ -58,6 +58,7 @@ dependencies {
     testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
+    implementation(androidx.constraintlayout)
 
     implementation(compose.lifecycle.runtime)
     implementation(androidx.bundles.lifecycle)

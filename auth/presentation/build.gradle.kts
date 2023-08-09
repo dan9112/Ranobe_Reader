@@ -58,7 +58,7 @@ dependencies {
     testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
-    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+    implementation(androidx.constraintlayout)
 
     implementation(compose.lifecycle.runtime)
     implementation(libs.hilt.navigation.compose)

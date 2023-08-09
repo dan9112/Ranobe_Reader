@@ -8,11 +8,13 @@ lifecycle-runtime-compose = "2.6.1"
 lifecycle-viewmodel-savedstate = "2.6.1"
 appcompat = "1.6.1"
 room = "2.5.2"
+constraintlayout = "1.0.1"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 lifecycle-runtimektx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout-compose", version.ref = "constraintlayout" }
 
 test-ext = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "test-ext" }
 test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "test-espresso-core" }

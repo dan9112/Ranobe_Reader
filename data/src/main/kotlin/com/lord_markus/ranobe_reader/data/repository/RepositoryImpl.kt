@@ -5,64 +5,64 @@ import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.data.storage.template.db.IDataSource
+import com.lord_markus.ranobe_reader.main.domain.models.*
 import com.lord_markus.ranobe_reader.main.domain.repository.MainRepository
 import java.io.IOException
 import javax.inject.Inject
 
 class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) : AuthRepository, MainRepository {
-    override suspend fun getSignedInUsers(): AuthCheckResult = try {
+    override suspend fun getSignedInUsers(): AuthCheckResultAuth = try {
         dataSource.getSignedIn().let { signedInUsers ->
             signedInUsers?.run {
-                AuthCheckResult.Success.SignedIn(signedIn = first, currentUserId = second)
-            } ?: AuthCheckResult.Success.NoSuchUsers
+                AuthCheckResultAuth.Success.SignedIn(signedIn = first, currentUserId = second)
+            } ?: AuthCheckResultAuth.Success.NoSuchUsers
         }
     } catch (e: IOException) {
-        AuthCheckResult.Error(error = ResultError.StorageError(message = e.message))
+        AuthCheckResultAuth.Error(error = AuthUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun signIn(login: String, password: String) = try {
         dataSource.signIn(login, password)?.run {
-            SignInResult.Success(userInfo = UserInfo(id = id, state = state))
-        } ?: SignInResult.Error(error = SignInError.NoSuchUser)
+            SignInResultAuth.Success(userInfo = UserInfo(id = id, state = state))
+        } ?: SignInResultAuth.Error(error = SignInError.NoSuchUser)
     } catch (e: IOException) {
-        SignInResult.Error(error = ResultError.StorageError(message = e.message))
+        SignInResultAuth.Error(error = AuthUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun signOut() = try {
-        dataSource.signOut()
-        SignOutResult.Success
+        SignOutResultMain.Success(signedIn = dataSource.signOut())
     } catch (e: IOException) {
-        SignOutResult.Error(error = ResultError.StorageError(message = e.message))
+        SignOutResultMain.Error(error = MainUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun signUp(login: String, password: String, state: UserState) = try {
         dataSource.addUser(login, password, state)?.let {
-            SignUpResult.Success(
+            SignUpResultAuth.Success(
                 userInfo = UserInfo(id = it, state = state)
             )
         }
-            ?: SignUpResult.Error(error = SignUpError.LoginAlreadyInUse)
+            ?: SignUpResultAuth.Error(error = SignUpError.LoginAlreadyInUse)
     } catch (e: IOException) {
-        SignUpResult.Error(error = ResultError.StorageError(message = e.message))
+        SignUpResultAuth.Error(error = AuthUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun removeAccount(userId: Long) = try {
         if (dataSource.removeUser(userId) > 0) {
-            RemoveAccountResult.Success
+            RemoveAccountResultMain.Success
         } else {
-            RemoveAccountResult.Error(error = RemoveAccountError.NoSuchUser)
+            RemoveAccountResultMain.Error(error = RemoveAccountError.NoSuchUser)
         }
     } catch (e: IOException) {
-        RemoveAccountResult.Error(error = ResultError.StorageError(message = e.message))
+        RemoveAccountResultMain.Error(error = MainUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun setCurrent(id: Long) = try {
         when (dataSource.setCurrent(id)) {
-            true -> SetCurrentResult.Success
-            false -> SetCurrentResult.Error(error = SetCurrentError.UserNotSignedIn)
-            null -> SetCurrentResult.Error(error = SetCurrentError.NoAuthInfo)
+            true -> SetCurrentResultMain.Success
+            false -> SetCurrentResultMain.Error(error = SetCurrentError.UserNotSignedIn)
+            null -> SetCurrentResultMain.Error(error = SetCurrentError.NoAuthInfo)
         }
     } catch (e: IOException) {
-        SetCurrentResult.Error(error = ResultError.StorageError(message = e.message))
+        SetCurrentResultMain.Error(error = MainUseCaseError.StorageError(message = e.message))
     }
 }

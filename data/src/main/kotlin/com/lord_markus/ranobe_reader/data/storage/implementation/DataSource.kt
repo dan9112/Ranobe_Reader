@@ -3,6 +3,9 @@ package com.lord_markus.ranobe_reader.data.storage.implementation
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import com.lord_markus.ranobe_reader.core.models.UserInfo
+import com.lord_markus.ranobe_reader.core.models.UserState
+import com.lord_markus.ranobe_reader.data.R
 import com.lord_markus.ranobe_reader.data.storage.template.db.IAppDatabase
 import com.lord_markus.ranobe_reader.data.storage.template.db.IDataSource
 import com.lord_markus.ranobe_reader.data.storage.template.db.dao.ITableUserAuthStateDao
@@ -11,9 +14,6 @@ import com.lord_markus.ranobe_reader.data.storage.template.db.dao.ITableUserInfo
 import com.lord_markus.ranobe_reader.data.storage.template.db.entities.TableUser
 import com.lord_markus.ranobe_reader.data.storage.template.db.entities.TableUserAuthState
 import com.lord_markus.ranobe_reader.data.storage.template.db.entities.TableUserInfo
-import com.lord_markus.ranobe_reader.core.models.UserInfo
-import com.lord_markus.ranobe_reader.core.models.UserState
-import com.lord_markus.ranobe_reader.data.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -74,22 +74,34 @@ class DataSource @Inject constructor(
         )
     }
 
-    override suspend fun signOut() {
-        withContext(defaultDispatcher) {
-            if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
-                val id = sharedPreferences.getLong(CURRENT_USER_ID_KEY, 1L)
-                if (tableUserAuthState.removeUserById(id) > 0) {
-                    updateSharedPreferences {
-                        remove(CURRENT_USER_ID_KEY)
+    override suspend fun signOut(): List<UserInfo> = withContext(defaultDispatcher) {
+        database.runInTransaction(
+            body = Callable {
+                if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
+                    val id = sharedPreferences.getLong(CURRENT_USER_ID_KEY, 1L)
+                    if (tableUserAuthState.removeUserById(id) == 0) {
+                        updateSharedPreferences {
+                            remove(CURRENT_USER_ID_KEY)
+                        }
+                        throw IOException(context.getString(R.string.no_user_with_id, id))
+                    } else {
+                        tableUserAuthState.getAllSignedIn().map {
+                            tableUserInfoDao.getInfoById(id = it)?.run {
+                                UserInfo(id, state)
+                            } ?: throw IOException(context.getString(R.string.caught_user_without_info_id, it))
+                        }.apply {
+                            updateSharedPreferences {
+                                if (isNotEmpty()) {
+                                    putLong(CURRENT_USER_ID_KEY, first().id)
+                                } else {
+                                    remove(CURRENT_USER_ID_KEY)
+                                }
+                            }
+                        }
                     }
-                } else {
-                    updateSharedPreferences {
-                        remove(CURRENT_USER_ID_KEY)
-                    }
-                    throw IOException(context.getString(R.string.no_user_with_id, id))
-                }
-            } else throw IOException(context.getString(R.string.no_signed_in_users))
-        }
+                } else throw IOException(context.getString(R.string.no_signed_in_users))
+            }
+        )
     }
 
     override suspend fun addUser(

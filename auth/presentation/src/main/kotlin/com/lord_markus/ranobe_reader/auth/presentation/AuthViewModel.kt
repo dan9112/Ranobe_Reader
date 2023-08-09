@@ -22,7 +22,7 @@ class AuthViewModel @Inject constructor(
     private val signInUseCase: SignInUseCase,
     private val signUpUseCase: SignUpUseCase
 ) : ViewModel() {
-    val authState = savedStateHandler.getStateFlow<UseCaseState<AuthCheckResult>>(
+    val authState = savedStateHandler.getStateFlow<UseCaseState<AuthCheckResultAuth>>(
         key = AUTH_STATE_KEY,
         initialValue = UseCaseState.InProcess
     )
@@ -30,11 +30,11 @@ class AuthViewModel @Inject constructor(
         key = AUTH_SCREEN_STATE_KEY,
         initialValue = AuthScreenState.SignIn
     )
-    val signInState = savedStateHandler.getStateFlow<ExtendedUseCaseState<SignInResult>>(
+    val signInState = savedStateHandler.getStateFlow<ExtendedUseCaseState<SignInResultAuth>>(
         key = SIGN_IN_STATE_KEY,
         initialValue = ExtendedUseCaseState.Default
     )
-    val signUpState = savedStateHandler.getStateFlow<ExtendedUseCaseState<SignUpResult>>(
+    val signUpState = savedStateHandler.getStateFlow<ExtendedUseCaseState<SignUpResultAuth>>(
         key = SIGN_UP_STATE_KEY,
         initialValue = ExtendedUseCaseState.Default
     )
@@ -44,7 +44,7 @@ class AuthViewModel @Inject constructor(
             savedStateHandler[SIGN_IN_STATE_KEY] = UseCaseState.InProcess
             savedStateHandler[SIGN_IN_STATE_KEY] = UseCaseState.ResultReceived(
                 result = if (login.isBlank() || password.isBlank()) {
-                    SignInResult.Error(error = SignInError.IncorrectInput)
+                    SignInResultAuth.Error(error = SignInError.IncorrectInput)
                 } else {
                     signInUseCase(login, password)
                 }
@@ -56,14 +56,14 @@ class AuthViewModel @Inject constructor(
         if (password2 != password) {
             savedStateHandler[SIGN_UP_STATE_KEY] =
                 UseCaseState.ResultReceived(
-                    result = SignUpResult.Error(error = SignUpError.IncorrectInput)
+                    result = SignUpResultAuth.Error(error = SignUpError.IncorrectInput)
                 )
         } else {
             viewModelScope.launch {
                 savedStateHandler[SIGN_UP_STATE_KEY] = UseCaseState.InProcess
                 savedStateHandler[SIGN_UP_STATE_KEY] = UseCaseState.ResultReceived(
                     result = if (login.isBlank() || password.isBlank()) {
-                        SignUpResult.Error(error = SignUpError.IncorrectInput)
+                        SignUpResultAuth.Error(error = SignUpError.IncorrectInput)
                     } else {
                         signUpUseCase(login, password, UserState.User)
                     }

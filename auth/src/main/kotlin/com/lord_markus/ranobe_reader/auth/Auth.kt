@@ -6,7 +6,7 @@ import com.lord_markus.ranobe_reader.core.models.UserState
 
 data object Auth {
     @Composable
-    fun Screen(onBackPressed: @Composable (() -> Unit) -> Unit, onSuccess: @Composable (UserState) -> Unit) =
+    fun Screen(onBackPressed: @Composable (() -> Unit) -> Unit, onSuccess: (UserState) -> Unit) =
         AuthScreen(
             onBackPressed = onBackPressed,
             onSuccess = onSuccess

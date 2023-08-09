@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                             Log.e("MyLog", "Current user state: $signedIn")
                             Main.Screen(
                                 onBackPressed = {},
-                                onSuccess = { viewModel.removeUserInfo() }// todo: переработать функцию в дальнейшем!
+                                goOut = { viewModel.removeUserInfo() }// todo: переработать функцию в дальнейшем!
                             )
                         }
                     }
