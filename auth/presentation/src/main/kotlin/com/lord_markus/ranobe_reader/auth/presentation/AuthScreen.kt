@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +35,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,39 +60,70 @@ fun AuthScreen(
     onBackPressed: @Composable (() -> Unit) -> Unit,
     onSuccess: @Composable (UserState) -> Unit
 ) {
+    ConstraintLayout {
+        val (indicator, content) = createRefs()
+        val progressBarVisible = rememberSaveable { mutableStateOf(true) }
 
-    val authState by viewModel.authState.collectAsStateWithLifecycle()
-    when (val currentState = authState) {
-        UseCaseState.InProcess -> {
-            // todo: показать индикатор загрузки по центру
-        }
-
-        is UseCaseState.ResultReceived -> {
-            // todo: скрыть индикатор загрузки
-            when (val result = currentState.result) {
-                is AuthCheckResult.Error -> TODO()
-
-                AuthCheckResult.Success.NoSuchUsers -> {
-                    val authScreenState by viewModel.authScreenState.collectAsStateWithLifecycle()
-
-                    when (authScreenState) {
-                        AuthScreenState.SignIn -> SignInScreen(viewModel = viewModel, onSuccess = onSuccess)
-                        AuthScreenState.SignUp -> SignUpScreen(
-                            viewModel = viewModel,
-                            onSuccess = onSuccess,
-                            onBackPressed = onBackPressed
-                        )
-                    }
-
+        Box(
+            modifier = Modifier.constrainAs(content) {
+                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                height = Dimension.fillToConstraints
+                width = Dimension.fillToConstraints
+            }
+        ) {
+            val authState by viewModel.authState.collectAsStateWithLifecycle()
+            when (val currentState = authState) {
+                UseCaseState.InProcess -> {
+                    progressBarVisible.value = true
                 }
 
-                is AuthCheckResult.Success.SignedIn -> {
-                    result.run {
-                        onSuccess(signedIn.first { it.id == currentUserId }.state)
+                is UseCaseState.ResultReceived -> {
+                    progressBarVisible.value = false
+                    when (val result = currentState.result) {
+                        is AuthCheckResult.Error -> TODO(reason = "Показать ошибку и закрыть приложение")
+
+                        AuthCheckResult.Success.NoSuchUsers -> {
+                            val authScreenState by viewModel.authScreenState.collectAsStateWithLifecycle()
+                            val switchIndicator = { state: Boolean ->
+                                progressBarVisible.value = state
+                            }
+
+                            when (authScreenState) {
+                                AuthScreenState.SignIn -> SignInScreen(
+                                    viewModel = viewModel,
+                                    onSuccess = onSuccess,
+                                    switchIndicator = switchIndicator
+                                )
+
+                                AuthScreenState.SignUp -> SignUpScreen(
+                                    viewModel = viewModel,
+                                    onSuccess = onSuccess,
+                                    onBackPressed = onBackPressed,
+                                    switchIndicator = switchIndicator
+                                )
+                            }
+
+                        }
+
+                        is AuthCheckResult.Success.SignedIn -> {
+                            result.run {
+                                onSuccess(signedIn.first { it.id == currentUserId }.state)
+                            }
+                        }
                     }
                 }
             }
         }
+
+        CircularProgressIndicator(
+            modifier = Modifier
+                .constrainAs(indicator) {
+                    linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                    height = Dimension.wrapContent
+                    width = Dimension.wrapContent
+                }
+                .alpha(if (progressBarVisible.value) 1f else 0f)
+        )
     }
 }
 
@@ -97,7 +131,8 @@ fun AuthScreen(
 fun SignUpScreen(
     viewModel: AuthViewModel,
     onSuccess: @Composable (UserState) -> Unit,
-    onBackPressed: @Composable (() -> Unit) -> Unit
+    onBackPressed: @Composable (() -> Unit) -> Unit,
+    switchIndicator: (Boolean) -> Unit
 ) {
     onBackPressed {
         viewModel.switchAuthScreenState()
@@ -114,17 +149,20 @@ fun SignUpScreen(
 
     when (val currentState = signUpState) {
         UseCaseState.InProcess -> {
-            Log.d("MyLog", "Process continues...")// show indicator
+            switchIndicator(true)
+            Log.d("MyLog", "Process continues...")
         }
 
         ExtendedUseCaseState.Default -> {
-            Log.d("MyLog", "Process has not been started yet")// hide indicator
+            switchIndicator(false)
+            Log.d("MyLog", "Process has not been started yet")
         }
 
         is UseCaseState.ResultReceived -> {
+            switchIndicator(false)
             if (currentState.trigger) {
                 viewModel.caughtTrigger()
-                Log.d("MyLog", "Process finished")// hide indicator
+                Log.d("MyLog", "Process finished")
                 when (val result = currentState.result) {
                     is SignUpResult.Error -> {
                         errorColor = true
@@ -262,7 +300,11 @@ fun SignUpScreen(
 }
 
 @Composable
-fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserState) -> Unit) {
+fun SignInScreen(
+    viewModel: AuthViewModel,
+    onSuccess: @Composable (UserState) -> Unit,
+    switchIndicator: (Boolean) -> Unit
+) {
     val signInState by viewModel.signInState.collectAsStateWithLifecycle()
 
     var login by rememberSaveable { mutableStateOf(value = "") }
@@ -273,17 +315,20 @@ fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserState) ->
 
     when (val currentState = signInState) {
         UseCaseState.InProcess -> {
-            Log.d("MyLog", "Process continues...")// show indicator
+            switchIndicator(true)
+            Log.d("MyLog", "Process continues...")
         }
 
         ExtendedUseCaseState.Default -> {
-            Log.d("MyLog", "Process has not been started yet")// hide indicator
+            switchIndicator(false)
+            Log.d("MyLog", "Process has not been started yet")
         }
 
         is UseCaseState.ResultReceived -> {
+            switchIndicator(false)
             if (currentState.trigger) {
                 viewModel.caughtTrigger()
-                Log.d("MyLog", "Process finished")// hide indicator
+                Log.d("MyLog", "Process finished")
                 when (val result = currentState.result) {
                     is SignInResult.Error -> {
                         errorColor = true
@@ -411,7 +456,8 @@ fun SignInScreen(viewModel: AuthViewModel, onSuccess: @Composable (UserState) ->
 fun PreviewSignInScreen() {
     SignInScreen(
         viewModel = viewModelStub,
-        onSuccess = { }
+        onSuccess = { },
+        switchIndicator = { }
     )
 }
 
@@ -421,7 +467,8 @@ fun PreviewSignUpScreen() {
     SignUpScreen(
         viewModel = viewModelStub,
         onSuccess = { },
-        onBackPressed = { }
+        onBackPressed = { },
+        switchIndicator = { }
     )
 }
 
