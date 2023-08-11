@@ -1,5 +1,6 @@
 package com.lord_markus.ranobe_reader.app
 
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -12,12 +13,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.lord_markus.ranobe_reader.auth.Auth
+import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
 import com.lord_markus.ranobe_reader.main.Main
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -30,35 +38,49 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val viewModel: MainViewModel = hiltViewModel()
-                    val state = viewModel.userInfo.collectAsStateWithLifecycle()
-                    // todo:
-                    //  - добавить главное окно
-                    //  - добавить навигацию
-                    //  - добавить переход между окнами
-                    //  - добавить Hilt в модуль главного окна
-                    val signedIn = state.value
-                    when {
-                        signedIn.isEmpty() -> {
+
+                    val navController = rememberNavController()
+                    NavHost(navController = navController, startDestination = "auth") {
+                        composable(route = "auth") {
                             Auth.Screen(
                                 modifier = Modifier.fillMaxSize(),
-                                onBackPressed = { onBackAction: () -> Unit ->
-                                    BackHandler { onBackAction() }
-                                },
+                                onBackPressed = { BackHandler { it() } },
                                 onSuccess = {
-                                    with(receiver = viewModel) {
-                                        updateSignedIn(newList = it)
+                                    val json = Uri.encode(Json.encodeToString(it))
+                                    navController.navigate("main/$json") {
+                                        launchSingleTop = true
                                     }
                                 }
                             )
                         }
-
-                        else -> {
-                            Log.e("MyLog", "Current user state: $signedIn")
+                        composable(
+                            route = "main/{users}",
+                            arguments = listOf(
+                                navArgument(name = "users") {
+                                    type = NavType.StringType
+                                }
+                            )
+                        ) { backStackEntry ->
+                            val users = backStackEntry
+                                .arguments
+                                ?.getString("users")
+                                ?.let { Json.decodeFromString<List<UserInfo>>(it) } ?: emptyList()
+                            Log.e("MyLog", "Input users: $users")
                             Main.Screen(
                                 modifier = Modifier.fillMaxSize(),
-                                users = signedIn,
-                                updateSignedIn = { viewModel.updateSignedIn(newList = it) }// todo: переработать функцию в дальнейшем!
+                                users = users,
+                                updateSignedIn = {
+                                    if (it.isNotEmpty()) {
+                                        val json = Uri.encode(Json.encodeToString(it))
+                                        navController.navigate(route = "main/$json") {
+                                            launchSingleTop = true
+                                        }
+                                    } else {
+                                        navController.navigate(route = "auth") {
+                                            launchSingleTop = true
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
@@ -69,17 +91,13 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+fun Greeting(name: String, modifier: Modifier = Modifier) = Text(
+    text = "Hello $name!",
+    modifier = modifier
+)
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    RanobeReaderTheme {
-        Greeting("Android")
-    }
+fun GreetingPreview() = RanobeReaderTheme {
+    Greeting("Android")
 }

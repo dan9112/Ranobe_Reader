@@ -62,11 +62,6 @@ fun AuthScreen(
     onBackPressed: @Composable (() -> Unit) -> Unit,
     onSuccess: (List<UserInfo>) -> Unit
 ) = ConstraintLayout(modifier = modifier) {
-    val onSuccessWithClearViewModel: (List<UserInfo>) -> Unit = {
-        onSuccess(it)
-        viewModel.resetAuthState()
-    }
-
     val (indicator, content) = createRefs()
     val progressBarVisible = rememberSaveable { mutableStateOf(true) }
 
@@ -97,13 +92,13 @@ fun AuthScreen(
                         when (authScreenState) {
                             AuthScreenState.SignIn -> SignInScreen(
                                 viewModel = viewModel,
-                                onSuccess = onSuccessWithClearViewModel,
+                                onSuccess = onSuccess,
                                 switchIndicator = switchIndicator
                             )
 
                             AuthScreenState.SignUp -> SignUpScreen(
                                 viewModel = viewModel,
-                                onSuccess = onSuccessWithClearViewModel,
+                                onSuccess = onSuccess,
                                 onBackPressed = onBackPressed,
                                 switchIndicator = switchIndicator
                             )
@@ -115,14 +110,10 @@ fun AuthScreen(
                         result.run {
                             val current = listOf(signedIn.first { it.id == currentUserId })
                             Log.e("MyLog", "Caught signed in users: $current")
-                            onSuccessWithClearViewModel(current + (signedIn - current))
+                            onSuccess(current + (signedIn - current))
                         }
                     }
                 }
-            }
-
-            ExtendedAuthUseCaseState.Default -> {
-                viewModel.getSignedInUsers()
             }
         }
     }

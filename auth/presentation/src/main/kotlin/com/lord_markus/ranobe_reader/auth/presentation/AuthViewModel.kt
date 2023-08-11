@@ -22,9 +22,9 @@ class AuthViewModel @Inject constructor(
     private val signInUseCase: SignInUseCase,
     private val signUpUseCase: SignUpUseCase
 ) : ViewModel() {
-    val authState = savedStateHandler.getStateFlow<ExtendedAuthUseCaseState<AuthCheckResult>>(
+    val authState = savedStateHandler.getStateFlow<AuthUseCaseState<AuthCheckResult>>(
         key = AUTH_STATE_KEY,
-        initialValue = ExtendedAuthUseCaseState.Default
+        initialValue = AuthUseCaseState.InProcess
     )
     val authScreenState = savedStateHandler.getStateFlow<AuthScreenState>(
         key = AUTH_SCREEN_STATE_KEY,
@@ -72,7 +72,7 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun getSignedInUsers() {
+    private fun getSignedInUsers() {
         viewModelScope.launch {
             savedStateHandler[AUTH_STATE_KEY] = AuthUseCaseState.InProcess
             savedStateHandler[AUTH_STATE_KEY] = AuthUseCaseState.ResultReceived(getSignedInUsersUseCase())
@@ -92,14 +92,14 @@ class AuthViewModel @Inject constructor(
             }
     }
 
-    fun resetAuthState() {
-        savedStateHandler[AUTH_STATE_KEY] = ExtendedAuthUseCaseState.Default
-    }
-
     private companion object {
         const val AUTH_SCREEN_STATE_KEY = "auth_screen_state"
         const val AUTH_STATE_KEY = "auth_state"
         const val SIGN_IN_STATE_KEY = "sign_in_state"
         const val SIGN_UP_STATE_KEY = "sign_up_state"
+    }
+
+    init {
+        getSignedInUsers()
     }
 }

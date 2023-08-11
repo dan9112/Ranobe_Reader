@@ -37,10 +37,6 @@ class MainViewModel @Inject constructor(
         if (state is MainUseCaseState.ResultReceived) savedStateHandler[KEY] = state.copy(trigger = false)
     }
 
-    fun resetSignedIn() {
-        savedStateHandler[KEY] = ExtendedMainUseCaseState.Default
-    }
-
     private companion object {
         private const val KEY = "key"
     }

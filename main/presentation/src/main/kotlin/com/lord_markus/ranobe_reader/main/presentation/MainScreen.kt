@@ -56,10 +56,7 @@ fun MainScreen(
             },
         users = users,
         viewModel = viewModel,
-        updateSignedIn = {
-            updateSignedIn(it)
-            viewModel.resetSignedIn()
-        },
+        updateSignedIn = updateSignedIn,
         switchIndicator = { progressBarVisible.value = it }
     )
 
