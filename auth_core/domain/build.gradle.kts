@@ -9,7 +9,7 @@ kotlin {
 }
 
 dependencies {
-    api(project(":auth_core:domain"))
+    api(project(":core"))
 
     implementation(libs.dagger)
     kapt(libs.dagger.compiler)

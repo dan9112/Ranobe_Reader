@@ -2,6 +2,7 @@ package com.lord_markus.ranobe_reader.data.di
 
 import android.content.Context
 import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
+import com.lord_markus.ranobe_reader.auth_core.domain.repository.AuthCoreRepository
 import com.lord_markus.ranobe_reader.data.repository.RepositoryImpl
 import com.lord_markus.ranobe_reader.data.storage.implementation.DataSource
 import com.lord_markus.ranobe_reader.data.storage.implementation.db.AppDatabase
@@ -49,6 +50,9 @@ object DataModule {
 
     @Singleton
     private fun getRepository(dataSource: IDataSource) = RepositoryImpl(dataSource)
+
+    @Provides
+    fun getAuthCoreRepository(dataSource: IDataSource): AuthCoreRepository = getRepository(dataSource)
 
     @Provides
     fun getAuthRepository(dataSource: IDataSource): AuthRepository = getRepository(dataSource)

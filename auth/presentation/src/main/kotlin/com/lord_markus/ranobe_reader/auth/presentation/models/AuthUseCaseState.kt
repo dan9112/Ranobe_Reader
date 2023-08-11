@@ -1,7 +1,7 @@
 package com.lord_markus.ranobe_reader.auth.presentation.models
 
 import android.os.Parcelable
-import com.lord_markus.ranobe_reader.auth.domain.models.AuthUseCaseResult
+import com.lord_markus.ranobe_reader.auth_core.domain.models.AuthUseCaseResult
 import kotlinx.parcelize.Parcelize
 
 sealed interface AuthUseCaseState<in T : AuthUseCaseResult> : ExtendedAuthUseCaseState<T> {

@@ -40,14 +40,15 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.lord_markus.ranobe_reader.auth.domain.models.*
+import com.lord_markus.ranobe_reader.auth.domain.models.AuthCheckResult
 import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
 import com.lord_markus.ranobe_reader.auth.domain.use_cases.GetSignedInUsersUseCase
-import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignInUseCase
-import com.lord_markus.ranobe_reader.auth.domain.use_cases.SignUpUseCase
 import com.lord_markus.ranobe_reader.auth.presentation.models.AuthScreenState
 import com.lord_markus.ranobe_reader.auth.presentation.models.AuthUseCaseState
 import com.lord_markus.ranobe_reader.auth.presentation.models.ExtendedAuthUseCaseState
+import com.lord_markus.ranobe_reader.auth_core.domain.models.*
+import com.lord_markus.ranobe_reader.auth_core.domain.use_cases.SignInUseCase
+import com.lord_markus.ranobe_reader.auth_core.domain.use_cases.SignUpUseCase
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
@@ -172,7 +173,7 @@ private fun SignUpScreen(
                                 SignUpError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
                                 SignUpError.LoginAlreadyInUse -> stringResource(R.string.login_is_already_in_use)
                                 SignUpError.PasswordRequirements -> stringResource(R.string.invalid_password)
-                                is AuthUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
+                                is AuthCoreUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
                             },
                             Toast.LENGTH_SHORT
                         ).show()
@@ -338,7 +339,7 @@ private fun SignInScreen(
                             when (val error = result.error) {
                                 SignInError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
                                 SignInError.NoSuchUser -> stringResource(id = R.string.no_such_user)
-                                is AuthUseCaseError.StorageError -> error.message
+                                is AuthCoreUseCaseError.StorageError -> error.message
                             },
                             Toast.LENGTH_SHORT
                         ).show()
@@ -361,11 +362,12 @@ private fun SignInScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
+        val textContainerColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary
         val colors = TextFieldDefaults.outlinedTextFieldColors(
-            focusedBorderColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
-            focusedLabelColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary
+            focusedBorderColor = textContainerColor,
+            unfocusedBorderColor = textContainerColor,
+            focusedLabelColor = textContainerColor,
+            unfocusedLabelColor = textContainerColor
         )
         Text(text = stringResource(R.string.login))
         Spacer(modifier = Modifier.height(16.dp))

@@ -1,7 +1,9 @@
 package com.lord_markus.ranobe_reader.data.repository
 
-import com.lord_markus.ranobe_reader.auth.domain.models.*
+import com.lord_markus.ranobe_reader.auth.domain.models.AuthCheckResult
+import com.lord_markus.ranobe_reader.auth.domain.models.AuthUseCaseError
 import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
+import com.lord_markus.ranobe_reader.auth_core.domain.models.*
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.data.storage.template.db.IDataSource
@@ -30,7 +32,7 @@ class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
             SignInResultAuth.Success(userInfo = UserInfo(id = id, state = state))
         } ?: SignInResultAuth.Error(error = SignInError.NoSuchUser)
     } catch (e: IOException) {
-        SignInResultAuth.Error(error = AuthUseCaseError.StorageError(message = e.message))
+        SignInResultAuth.Error(error = AuthCoreUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun signOut() = try {
@@ -47,7 +49,7 @@ class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
         }
             ?: SignUpResultAuth.Error(error = SignUpError.LoginAlreadyInUse)
     } catch (e: IOException) {
-        SignUpResultAuth.Error(error = AuthUseCaseError.StorageError(message = e.message))
+        SignUpResultAuth.Error(error = AuthCoreUseCaseError.StorageError(message = e.message))
     }
 
     override suspend fun signOutWithRemove() = try {

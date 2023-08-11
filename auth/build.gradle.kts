@@ -44,6 +44,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":auth_core"))
     implementation(project(":auth:presentation"))
     implementation(project(":auth:domain"))
     implementation(project(":data"))
@@ -51,9 +52,9 @@ dependencies {
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
     implementation(libs.material)
-    testImplementation(libs.junit4)
+    /*testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
-    androidTestImplementation(androidx.test.espresso.core)
+    androidTestImplementation(androidx.test.espresso.core)*/
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)

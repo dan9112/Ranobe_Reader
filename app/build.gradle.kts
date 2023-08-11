@@ -64,11 +64,11 @@ dependencies {
     implementation(androidx.lifecycle.viewmodel.compose)
     implementation(compose.activity)
     implementation(compose.lifecycle.runtime)
-    testImplementation(libs.junit4)
+    /*testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)
     androidTestImplementation(platform(compose.bom))
-    androidTestImplementation(compose.ui.test.manifest)
+    androidTestImplementation(compose.ui.test.manifest)*/
     debugImplementation(compose.ui.tooling)
     debugImplementation(compose.ui.test.manifest)
 

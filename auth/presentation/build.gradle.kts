@@ -44,20 +44,15 @@ android {
 }
 
 dependencies {
-    api(project(":design"))
-
     implementation(project(":auth:domain"))
+    api(project(":auth_core:presentation"))
 
-    api(compose.bom)
-    api(compose.bundles.ui)
-    api(compose.material3)
-    debugApi(compose.ui.tooling)
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
     implementation(libs.material)
-    testImplementation(libs.junit4)
+    /*testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
-    androidTestImplementation(androidx.test.espresso.core)
+    androidTestImplementation(androidx.test.espresso.core)*/
     implementation(androidx.constraintlayout)
 
     implementation(compose.lifecycle.runtime)

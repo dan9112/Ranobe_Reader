@@ -1,13 +1,12 @@
-@file:Suppress("UnstableApiUsage")
-
 plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
     kotlin("kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
-    namespace = "${AndroidConfig.BASE_PACKAGE}.main.data"
+    namespace = "${AndroidConfig.BASE_PACKAGE}.auth_core"
     compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {
@@ -20,10 +19,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
@@ -36,20 +32,21 @@ android {
 }
 
 dependencies {
-    implementation(project(":main:domain"))
+    implementation(project(":auth_core:presentation"))
+    implementation(project(":auth_core:domain"))
+    implementation(project(":data"))
 
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
     implementation(libs.material)
-    testImplementation(libs.junit4)
+    /*testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
-    androidTestImplementation(androidx.test.espresso.core)
+    androidTestImplementation(androidx.test.espresso.core)*/
 
-    implementation(androidx.room.runtime)
-    annotationProcessor(androidx.room.annotationProcessor)
-    kapt(androidx.room.kapt)
-    implementation(androidx.room.ktx)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+}
 
-    implementation(libs.dagger)
-    kapt(libs.dagger.compiler)
+kapt {
+    correctErrorTypes = true
 }

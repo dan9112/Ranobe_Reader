@@ -1,14 +1,13 @@
-@file:Suppress("UnstableApiUsage")
-
+@Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
-    kotlin("kapt")
+    id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
 }
 
 android {
-    namespace = "${AndroidConfig.BASE_PACKAGE}.data"
+    namespace = "${AndroidConfig.BASE_PACKAGE}.auth_core.presentation"
     compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {
@@ -21,10 +20,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
@@ -37,20 +33,27 @@ android {
 }
 
 dependencies {
-    implementation(project(":auth:domain"))
-    implementation(project(":main:domain"))
+    api(project(":design"))
 
+    api(project(":auth:domain"))
+
+    api(compose.bom)
+    api(compose.bundles.ui)
+    api(compose.material3)
+    debugApi(compose.ui.tooling)
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
     implementation(libs.material)
     /*testImplementation(libs.junit4)
     androidTestImplementation(androidx.test.ext)
     androidTestImplementation(androidx.test.espresso.core)*/
+    implementation(androidx.constraintlayout)
 
-    implementation(androidx.room.runtime)
-    annotationProcessor(androidx.room.annotationProcessor)
-    kapt(androidx.room.kapt)
-    implementation(androidx.room.ktx)
+    implementation(compose.lifecycle.runtime)
+    implementation(libs.hilt.navigation.compose)
+    implementation(androidx.bundles.lifecycle)
+
+    implementation(libs.emoji.java)
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)

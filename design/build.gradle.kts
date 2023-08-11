@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.lord_markus.ranobe_reader.design"
-    compileSdk = 33
+    namespace = "${AndroidConfig.BASE_PACKAGE}.design"
+    compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {
-        minSdk = 24
+        minSdk = AndroidConfig.MIN_SDK
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -26,11 +26,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = AndroidConfig.JAVA_VERSION
+        targetCompatibility = AndroidConfig.JAVA_VERSION
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = AndroidConfig.JAVA_VERSION.toString()
     }
     buildFeatures {
         compose = true
