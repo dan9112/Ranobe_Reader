@@ -4,5 +4,6 @@ import com.lord_markus.ranobe_reader.auth_core.domain.repository.AuthCoreReposit
 import javax.inject.Inject
 
 class SignInUseCase @Inject constructor(private val authRepository: AuthCoreRepository) {
-    suspend operator fun invoke(login: String, password: String) = authRepository.signIn(login, password)
+    suspend operator fun invoke(login: String, password: String, update: Boolean) =
+        authRepository.signIn(login, password, update)
 }

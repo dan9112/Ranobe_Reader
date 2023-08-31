@@ -42,7 +42,7 @@ class DataSource @Inject constructor(
             .apply()
     }
 
-    override suspend fun signIn(login: String, password: String) = withContext(defaultDispatcher) {
+    override suspend fun signIn(login: String, password: String, update: Boolean) = withContext(defaultDispatcher) {
         database.runInTransaction(
             body = Callable {
                 tableUsersDao.getId(login, password)
@@ -67,8 +67,10 @@ class DataSource @Inject constructor(
                                     )
                                 )
                             }
-                            .updateSharedPreferences {
-                                putLong(CURRENT_USER_ID_KEY, id)
+                            .apply {
+                                if (update) updateSharedPreferences {
+                                    putLong(CURRENT_USER_ID_KEY, id)
+                                }
                             }
                     }
             }
@@ -95,7 +97,7 @@ class DataSource @Inject constructor(
                     } else {
                         tableUserAuthState.getAllSignedIn().map {
                             tableUserInfoDao.getInfoById(id = it)?.run {
-                                UserInfo(id, state)
+                                UserInfo(it, state)
                             } ?: throw IOException(context.getString(R.string.caught_user_without_info_id, it))
                         }.apply {
                             updateSharedPreferences {
@@ -119,7 +121,8 @@ class DataSource @Inject constructor(
     override suspend fun addUser(
         login: String,
         password: String,
-        state: UserState
+        state: UserState,
+        withSignIn: Boolean
     ) = withContext(defaultDispatcher) {
         database.runInTransaction(
             body = Callable {
@@ -128,10 +131,15 @@ class DataSource @Inject constructor(
                         null
                     } else {
                         tableUserInfoDao.addInfo(userInfo = TableUserInfo(id, state)) ?: return@let null
-                        tableUserAuthState.addState(userState = TableUserAuthState(id))
+                        tableUserAuthState.addState(userState = TableUserAuthState(id = id, authState = withSignIn))
                             ?: return@let null
                         id
                     }
+                        ?.also {
+                            if (withSignIn) updateSharedPreferences {
+                                putLong(CURRENT_USER_ID_KEY, id)
+                            }
+                        }
                 }
             }
         )

@@ -47,6 +47,7 @@ dependencies {
     api(project(":design"))
 
     implementation(project(":main:domain"))
+    api(project(":auth_core:presentation"))
 
     api(compose.bom)
     api(compose.bundles.ui)

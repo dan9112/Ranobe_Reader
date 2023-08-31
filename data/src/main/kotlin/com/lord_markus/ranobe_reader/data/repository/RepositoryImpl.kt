@@ -27,8 +27,8 @@ class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
         AuthCheckResult.Error(error = AuthUseCaseError.StorageError(message = e.message))
     }
 
-    override suspend fun signIn(login: String, password: String) = try {
-        dataSource.signIn(login, password)?.run {
+    override suspend fun signIn(login: String, password: String, update: Boolean) = try {
+        dataSource.signIn(login, password, update)?.run {
             SignInResultAuth.Success(userInfo = UserInfo(id = id, state = state))
         } ?: SignInResultAuth.Error(error = SignInError.NoSuchUser)
     } catch (e: IOException) {
@@ -41,8 +41,8 @@ class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
         SignOutResultMain.Error(error = MainUseCaseError.StorageError(message = e.message))
     }
 
-    override suspend fun signUp(login: String, password: String, state: UserState) = try {
-        dataSource.addUser(login, password, state)?.let {
+    override suspend fun signUp(login: String, password: String, state: UserState, withSignIn: Boolean) = try {
+        dataSource.addUser(login, password, state, withSignIn)?.let {
             SignUpResultAuth.Success(
                 userInfo = UserInfo(id = it, state = state)
             )

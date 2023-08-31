@@ -43,14 +43,14 @@ class AuthViewModel @Inject constructor(
         initialValue = ExtendedAuthUseCaseState.Default
     )
 
-    fun trySignIn(login: String, password: String) {
+    fun trySignIn(login: String, password: String, update: Boolean) {
         viewModelScope.launch {
             savedStateHandler[SIGN_IN_STATE_KEY] = AuthUseCaseState.InProcess
             savedStateHandler[SIGN_IN_STATE_KEY] = AuthUseCaseState.ResultReceived(
                 result = if (login.isBlank() || password.isBlank()) {
                     SignInResultAuth.Error(error = SignInError.IncorrectInput)
                 } else {
-                    signInUseCase(login, password)
+                    signInUseCase(login, password, update)
                 }
             )
         }
@@ -69,7 +69,7 @@ class AuthViewModel @Inject constructor(
                     result = if (login.isBlank() || password.isBlank()) {
                         SignUpResultAuth.Error(error = SignUpError.IncorrectInput)
                     } else {
-                        signUpUseCase(login, password, UserState.User)
+                        signUpUseCase(login = login, password = password, userState = UserState.User, withSignIn = true)
                     }
                 )
             }

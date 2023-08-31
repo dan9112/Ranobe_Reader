@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":main:presentation"))
     implementation(project(":main:domain"))
     implementation(project(":data"))
+    implementation(project(":auth_core"))
 
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)

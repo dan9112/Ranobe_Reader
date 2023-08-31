@@ -11,8 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -38,41 +41,75 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-
                     val navController = rememberNavController()
                     NavHost(navController = navController, startDestination = "auth") {
                         composable(route = "auth") {
                             Auth.Screen(
                                 modifier = Modifier.fillMaxSize(),
                                 onBackPressed = { BackHandler { it() } },
-                                onSuccess = {
-                                    val json = Uri.encode(Json.encodeToString(it))
-                                    navController.navigate("main/$json") {
+                                onSuccess = { signedIn, currentId ->
+                                    val json = Uri.encode(Json.encodeToString(signedIn.sortedBy { it.id }))
+                                    navController.navigate("main/$json/$currentId") {
                                         launchSingleTop = true
                                     }
-                                }
+                                },
+                                primary = true
                             )
                         }
                         composable(
-                            route = "main/{users}",
+                            route = "main/{users}/{current}",
                             arguments = listOf(
                                 navArgument(name = "users") {
                                     type = NavType.StringType
+                                },
+                                navArgument(name = "current") {
+                                    type = NavType.LongType
                                 }
                             )
                         ) { backStackEntry ->
                             val users = backStackEntry
                                 .arguments
                                 ?.getString("users")
-                                ?.let { Json.decodeFromString<List<UserInfo>>(it) } ?: emptyList()
-                            Log.e("MyLog", "Input users: $users")
+                                ?.let { Json.decodeFromString<List<UserInfo>>(it) }
+                                ?: throw IllegalArgumentException("Empty signed in list!")
+                            val currentId = backStackEntry
+                                .arguments
+                                ?.getLong("current") ?: throw IllegalArgumentException("Empty current id!")
+                            Log.i("MyLog", "Input users: $users")
+
+                            val openDialog = remember { mutableStateOf(false) }
+                            if (openDialog.value) {
+                                Dialog(onDismissRequest = { openDialog.value = false }) {
+                                    Auth.Screen(
+                                        modifier = Modifier.fillMaxSize(),
+                                        onBackPressed = { openDialog.value = false },
+                                        onSuccess = { list, newCurrentId ->
+                                            val json =
+                                                Uri.encode(Json.encodeToString((users + list).sortedBy { it.id }))
+                                            navController.navigate(route = "main/$json/$newCurrentId") {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        primary = false
+                                    )
+                                }
+                            } else {
+
+                            }
+
+
                             Main.Screen(
                                 modifier = Modifier.fillMaxSize(),
+                                addUsers = {
+                                    openDialog.value = true
+                                },
+                                onBackPressed = { BackHandler { it() } },
                                 users = users,
-                                updateSignedIn = {
-                                    if (it.isNotEmpty()) {
-                                        val json = Uri.encode(Json.encodeToString(it))
-                                        navController.navigate(route = "main/$json") {
+                                currentId = currentId,
+                                updateSignedIn = { newUsers, newCurrentId ->
+                                    if (newUsers.isNotEmpty()) {
+                                        val json = Uri.encode(Json.encodeToString(newUsers))
+                                        navController.navigate(route = "main/$json/$newCurrentId") {
                                             launchSingleTop = true
                                         }
                                     } else {

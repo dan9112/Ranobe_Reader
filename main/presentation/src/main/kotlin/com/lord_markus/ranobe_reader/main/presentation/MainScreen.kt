@@ -2,6 +2,7 @@ package com.lord_markus.ranobe_reader.main.presentation
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,11 +11,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,20 +35,32 @@ import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.domain.repository.MainRepository
+import com.lord_markus.ranobe_reader.main.domain.use_cases.SetCurrentUseCase
 import com.lord_markus.ranobe_reader.main.domain.use_cases.SignOutUseCase
 import com.lord_markus.ranobe_reader.main.domain.use_cases.SignOutWithRemoveUseCase
 import com.lord_markus.ranobe_reader.main.presentation.models.ExtendedMainUseCaseState
 import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainScreen(
     modifier: Modifier,
+    onBackPressed: @Composable (() -> Unit) -> Unit,
+    addUsers: () -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
     users: List<UserInfo>,
-    updateSignedIn: (List<UserInfo>) -> Unit
+    currentId: Long,
+    updateSignedIn: (List<UserInfo>, Long?) -> Unit
 ) = ConstraintLayout(modifier = modifier) {
     val (indicator, content) = createRefs()
     val progressBarVisible = rememberSaveable { mutableStateOf(false) }
+
+    val coroutineScope = CoroutineScope(Dispatchers.Main)
+    onBackPressed { coroutineScope.cancel() }
 
     Content(
         modifier = Modifier
@@ -54,9 +69,15 @@ fun MainScreen(
                 height = Dimension.fillToConstraints
                 width = Dimension.fillToConstraints
             },
+        addUsers = addUsers,
+        coroutineScope = coroutineScope,
         users = users,
+        currentId = currentId,
         viewModel = viewModel,
-        updateSignedIn = updateSignedIn,
+        updateSignedIn = { users, currentId ->
+            coroutineScope.cancel()
+            updateSignedIn(users, currentId)
+        },
         switchIndicator = { progressBarVisible.value = it }
     )
 
@@ -71,10 +92,13 @@ fun MainScreen(
 @Composable
 private fun Content(
     modifier: Modifier = Modifier,
+    addUsers: () -> Unit,
+    coroutineScope: CoroutineScope,
     users: List<UserInfo>,
+    currentId: Long,
     viewModel: MainViewModel,
-    updateSignedIn: (List<UserInfo>) -> Unit,
-    switchIndicator: (Boolean) -> Unit
+    updateSignedIn: (List<UserInfo>, Long?) -> Unit,
+    switchIndicator: (Boolean) -> Unit// todo: добавить деактивацию всех интерактивных элементов при включении!
 ) {
     val signedInState by viewModel.signedIn.collectAsStateWithLifecycle()
     when (val currentState = signedInState) {
@@ -105,7 +129,7 @@ private fun Content(
                         val list = result.signedIn
                         Log.e("MyLog", list.joinToString())
 
-                        updateSignedIn(list)
+                        updateSignedIn(list, if (list.isEmpty()) null else list.first().id)
                     }
                 }
             }
@@ -113,7 +137,7 @@ private fun Content(
     }
 
     ConstraintLayout(modifier = modifier) {
-        val (usersView, usersTitleView, mainTitleView, signOutButton) = createRefs()
+        val (usersView, usersTitleView, mainTitleView, signInButton) = createRefs()
 
         val topGuideline = createGuidelineFromTop(fraction = 0.4f)
         val bottomGuideline = createGuidelineFromBottom(fraction = 0.45f)
@@ -127,10 +151,55 @@ private fun Content(
             }
         ) {
             items(users) { user ->
-                Row {
-                    Text(text = user.id.toString(), modifier = Modifier.weight(1f))
+                Row(
+                    modifier = if (user.id == currentId) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val textColor = MaterialTheme.colorScheme.run {
+                        if (user.id == currentId) onPrimary else primary
+                    }
+                    Text(
+                        text = user.id.toString(),
+                        modifier = Modifier.weight(1f),
+                        color = textColor
+                    )// todo: заменить на имя пользователя!
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = user.state.toString(), modifier = Modifier.weight(5f))
+                    Text(text = user.state.toString(), modifier = Modifier.weight(5f), color = textColor)
+                    val context = LocalContext.current
+                    Button(
+                        onClick = {
+                            if (user.id != currentId) {
+                                val setCurrentStateCollector = FlowCollector<MainUseCaseState<SetCurrentResultMain>> {
+                                    when (it) {
+                                        MainUseCaseState.InProcess -> {
+                                            switchIndicator(true)
+                                        }
+
+                                        is MainUseCaseState.ResultReceived -> {
+                                            switchIndicator(false)
+                                            when (it.result) {
+                                                is SetCurrentResultMain.Error -> Toast.makeText(
+                                                    context,
+                                                    "Attempt to switch account failed!",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+
+                                                SetCurrentResultMain.Success -> updateSignedIn(users, user.id)
+                                            }
+                                        }
+                                    }
+                                }
+                                coroutineScope.launch {
+                                    viewModel.current.collect(setCurrentStateCollector)
+                                }
+                                viewModel.setCurrent(user.id)
+                            } else {
+                                viewModel.signOut()
+                            }
+                        }
+                    ) {
+                        Text(text = if (user.id != currentId) "Switch" else "SignOut")
+                    }
                 }
             }
         }
@@ -151,13 +220,13 @@ private fun Content(
             }
         )
         Button(
-            onClick = { viewModel.signOut() },
-            modifier = Modifier.constrainAs(signOutButton) {
+            onClick = addUsers,
+            modifier = Modifier.constrainAs(signInButton) {
                 linkTo(start = startGuideline, end = endGuideline)
                 top.linkTo(anchor = usersView.bottom, margin = 8.dp)
             }
         ) {
-            Text(text = "Exit")
+            Text(text = "Add account")
         }
     }
 }
@@ -167,9 +236,18 @@ private fun Content(
 fun PreviewContent() = RanobeReaderTheme {
     Content(
         modifier = Modifier.fillMaxSize(),
-        users = listOf(UserInfo(id = 1, state = UserState.User)),
+        addUsers = { },
+        coroutineScope = CoroutineScope(Dispatchers.Default),
+        users = listOf(
+            UserInfo(id = 0, state = UserState.Admin),
+            UserInfo(id = 1, state = UserState.User),
+            UserInfo(id = 2, state = UserState.User),
+            UserInfo(id = 3, state = UserState.User),
+            UserInfo(id = 4, state = UserState.User)
+        ),
+        currentId = 1,
         viewModel = viewModelStub,
-        updateSignedIn = { },
+        updateSignedIn = { _, _ -> },
         switchIndicator = { }
     )
 }
@@ -189,6 +267,6 @@ private val viewModelStub by lazy {
         savedStateHandler = SavedStateHandle(),
         signOutUseCase = SignOutUseCase(mainRepositoryStub),
         signOutWithRemoveUseCase = SignOutWithRemoveUseCase(mainRepositoryStub),
-//        setCurrentUseCase = SetCurrentUseCase(mainRepositoryStub)
+        setCurrentUseCase = SetCurrentUseCase(mainRepositoryStub)
     )
 }

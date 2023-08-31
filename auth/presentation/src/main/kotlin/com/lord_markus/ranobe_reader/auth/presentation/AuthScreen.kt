@@ -61,7 +61,8 @@ fun AuthScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     modifier: Modifier,
     onBackPressed: @Composable (() -> Unit) -> Unit,
-    onSuccess: (List<UserInfo>) -> Unit
+    onSuccess: (List<UserInfo>, Long) -> Unit,
+    primary: Boolean
 ) = ConstraintLayout(modifier = modifier) {
     val (indicator, content) = createRefs()
     val progressBarVisible = rememberSaveable { mutableStateOf(true) }
@@ -74,6 +75,11 @@ fun AuthScreen(
         }
     ) {
         val authState by viewModel.authState.collectAsStateWithLifecycle()
+
+        val switchIndicator = { state: Boolean ->
+            progressBarVisible.value = state
+        }
+
         when (val currentState = authState) {
             AuthUseCaseState.InProcess -> {
                 progressBarVisible.value = true
@@ -86,33 +92,42 @@ fun AuthScreen(
 
                     AuthCheckResult.Success.NoSuchUsers -> {
                         val authScreenState by viewModel.authScreenState.collectAsStateWithLifecycle()
-                        val switchIndicator = { state: Boolean ->
-                            progressBarVisible.value = state
-                        }
 
                         when (authScreenState) {
-                            AuthScreenState.SignIn -> SignInScreen(
-                                viewModel = viewModel,
-                                onSuccess = onSuccess,
-                                switchIndicator = switchIndicator
-                            )
+                            AuthScreenState.SignIn -> {
+                                SignInScreen(
+                                    viewModel = viewModel,
+                                    onSuccess = {
+                                        onSuccess(listOf(it), it.id)
+                                    },
+                                    switchIndicator = switchIndicator,
+                                    primary = primary
+                                )
+                            }
 
-                            AuthScreenState.SignUp -> SignUpScreen(
-                                viewModel = viewModel,
-                                onSuccess = onSuccess,
-                                onBackPressed = onBackPressed,
-                                switchIndicator = switchIndicator
-                            )
+                            AuthScreenState.SignUp -> {
+                                SignUpScreen(
+                                    viewModel = viewModel,
+                                    onSuccess = onSuccess,
+                                    switchIndicator = switchIndicator
+                                )
+                            }
                         }
-
                     }
 
                     is AuthCheckResult.Success.SignedIn -> {
-                        result.run {
-                            val current = listOf(signedIn.first { it.id == currentUserId })
-                            Log.e("MyLog", "Caught signed in users: $current")
-                            onSuccess(current + (signedIn - current))
+                        if (primary) result.run {
+                            Log.e("MyLog", "Caught signed in users: $signedIn")
+                            onSuccess(signedIn, currentUserId)
                         }
+                        else SignInScreen(
+                            viewModel = viewModel,
+                            onSuccess = {
+                                result.run { onSuccess(listOf(it), currentUserId) }
+                            },
+                            switchIndicator = switchIndicator,
+                            primary = primary
+                        )
                     }
                 }
             }
@@ -131,14 +146,9 @@ fun AuthScreen(
 @Composable
 private fun SignUpScreen(
     viewModel: AuthViewModel,
-    onSuccess: (List<UserInfo>) -> Unit,
-    onBackPressed: @Composable (() -> Unit) -> Unit,
+    onSuccess: (List<UserInfo>, Long) -> Unit,
     switchIndicator: (Boolean) -> Unit
 ) {
-    onBackPressed {
-        viewModel.switchAuthScreenState()
-    }
-
     val signUpState by viewModel.signUpState.collectAsStateWithLifecycle()
 
     var login by rememberSaveable { mutableStateOf(value = "") }
@@ -171,8 +181,8 @@ private fun SignUpScreen(
                             LocalContext.current,
                             when (val error = result.error) {
                                 SignUpError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
-                                SignUpError.LoginAlreadyInUse -> stringResource(R.string.login_is_already_in_use)
-                                SignUpError.PasswordRequirements -> stringResource(R.string.invalid_password)
+                                SignUpError.LoginAlreadyInUse -> stringResource(id = R.string.login_is_already_in_use)
+                                SignUpError.PasswordRequirements -> stringResource(id = R.string.invalid_password)
                                 is AuthCoreUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
                             },
                             Toast.LENGTH_SHORT
@@ -181,7 +191,9 @@ private fun SignUpScreen(
 
                     is SignUpResultAuth.Success -> {
                         Log.e("MyLog", "Signed up user: ${result.userInfo}")
-                        onSuccess(listOf(result.userInfo))
+                        result.run {
+                            onSuccess(listOf(userInfo), userInfo.id)
+                        }
                     }
                 }
             }
@@ -304,8 +316,9 @@ private fun SignUpScreen(
 @Composable
 private fun SignInScreen(
     viewModel: AuthViewModel,
-    onSuccess: (List<UserInfo>) -> Unit,
-    switchIndicator: (Boolean) -> Unit
+    onSuccess: (UserInfo) -> Unit,
+    switchIndicator: (Boolean) -> Unit,
+    primary: Boolean
 ) {
     val signInState by viewModel.signInState.collectAsStateWithLifecycle()
 
@@ -348,7 +361,11 @@ private fun SignInScreen(
                     is SignInResultAuth.Success -> {
                         Log.i("MyLog", "Texts: $login\t$password")
                         Log.e("MyLog", "Signed in user: ${result.userInfo}")
-                        onSuccess(listOf(result.userInfo))
+                        onSuccess(result.userInfo)
+                        if (!primary) {
+                            login = ""
+                            password = ""
+                        }
                     }
                 }
             }
@@ -402,7 +419,7 @@ private fun SignInScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
         val action: () -> Unit = {
-            viewModel.trySignIn(login, password)
+            viewModel.trySignIn(login = login, password = password, update = primary)
             keyboardController?.hide()
         }
         OutlinedTextField(
@@ -440,29 +457,42 @@ private fun SignInScreen(
             onClick = action,
             enabled = signInState != AuthUseCaseState.InProcess
         ) {
-            Text(text = stringResource(R.string.login_verb))
+            Text(text = stringResource(id = if (primary) R.string.login_verb else R.string.add_user))
         }
-        val annotatedString = buildAnnotatedString {
+        if (primary) buildAnnotatedString {
             withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
                 append(stringResource(R.string.sign_up))
             }
+        }.let { annotatedString ->
+            Text(
+                text = annotatedString,
+                modifier = Modifier.clickable {
+                    viewModel.switchAuthScreenState()
+                }
+            )
         }
-        Text(
-            text = annotatedString,
-            modifier = Modifier.clickable {
-                viewModel.switchAuthScreenState()
-            }
-        )
     }
 }
 
 @Preview(device = "spec:parent=Nexus 10")
 @Composable
-fun PreviewSignInScreen() = RanobeReaderTheme {
+fun PreviewPrimarySignInScreen() = RanobeReaderTheme {
     SignInScreen(
         viewModel = viewModelStub,
         onSuccess = { },
-        switchIndicator = { }
+        switchIndicator = { },
+        primary = true
+    )
+}
+
+@Preview(device = "spec:parent=Nexus 10")
+@Composable
+fun PreviewDefaultSignInScreen() = RanobeReaderTheme {
+    SignInScreen(
+        viewModel = viewModelStub,
+        onSuccess = { },
+        switchIndicator = { },
+        primary = false
     )
 }
 
@@ -471,8 +501,7 @@ fun PreviewSignInScreen() = RanobeReaderTheme {
 fun PreviewSignUpScreen() = RanobeReaderTheme {
     SignUpScreen(
         viewModel = viewModelStub,
-        onSuccess = { },
-        onBackPressed = { },
+        onSuccess = { _, _ -> },
         switchIndicator = { }
     )
 }
@@ -481,8 +510,10 @@ private val authRepositoryStub by lazy {
     object : AuthRepository {
         private val userInfoStub = UserInfo(id = 0, state = UserState.User)
         override suspend fun getSignedInUsers() = AuthCheckResult.Success.NoSuchUsers
-        override suspend fun signIn(login: String, password: String) = SignInResultAuth.Success(userInfo = userInfoStub)
-        override suspend fun signUp(login: String, password: String, state: UserState) =
+        override suspend fun signIn(login: String, password: String, update: Boolean) =
+            SignInResultAuth.Success(userInfo = userInfoStub)
+
+        override suspend fun signUp(login: String, password: String, state: UserState, withSignIn: Boolean) =
             SignUpResultAuth.Success(userInfo = userInfoStub)
     }
 }
