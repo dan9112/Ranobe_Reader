@@ -106,6 +106,10 @@ fun AuthScreen(
                             }
 
                             AuthScreenState.SignUp -> {
+                                onBackPressed {
+                                    viewModel.switchAuthScreenState()
+                                }
+
                                 SignUpScreen(
                                     viewModel = viewModel,
                                     onSuccess = onSuccess,
@@ -329,14 +333,14 @@ private fun SignInScreen(
     var errorColor by rememberSaveable { mutableStateOf(value = false) }
 
     when (val currentState = signInState) {
-        AuthUseCaseState.InProcess -> {
-            switchIndicator(true)
-            Log.d("MyLog", "Process continues...")
-        }
-
         ExtendedAuthUseCaseState.Default -> {
             switchIndicator(false)
             Log.d("MyLog", "Process has not been started yet")
+        }
+
+        AuthUseCaseState.InProcess -> {
+            switchIndicator(true)
+            Log.d("MyLog", "Process continues...")
         }
 
         is AuthUseCaseState.ResultReceived -> {

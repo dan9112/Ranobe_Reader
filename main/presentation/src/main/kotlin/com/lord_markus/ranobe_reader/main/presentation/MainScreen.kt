@@ -60,7 +60,9 @@ fun MainScreen(
     val progressBarVisible = rememberSaveable { mutableStateOf(false) }
 
     val coroutineScope = CoroutineScope(Dispatchers.Main)
-    onBackPressed { coroutineScope.cancel() }
+    onBackPressed {
+        coroutineScope.cancel()
+    }
 
     Content(
         modifier = Modifier

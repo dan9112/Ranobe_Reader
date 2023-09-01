@@ -11,11 +11,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,9 +28,9 @@ import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
 import com.lord_markus.ranobe_reader.main.Main
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -41,17 +43,31 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val viewModel: MainViewModel = viewModel()
                     val navController = rememberNavController()
+
+                    /*LaunchedEffect(Unit) {
+                        navController.currentBackStack.collect {
+                            Log.println(ASSERT, "MyLog", "Current backStack:\n${it.joinToString(separator = "\n")}")
+                        }
+                    }*/
+                    LaunchedEffect(Unit) {
+                        viewModel.currentDestination.collectLatest {
+                            navController.navigate(it) {
+                                popUpTo(0)
+                            }
+                        }
+                    }
                     NavHost(navController = navController, startDestination = "auth") {
                         composable(route = "auth") {
                             Auth.Screen(
                                 modifier = Modifier.fillMaxSize(),
-                                onBackPressed = { BackHandler { it() } },
+                                onBackPressed = {
+                                    BackHandler { it() }
+                                },
                                 onSuccess = { signedIn, currentId ->
                                     val json = Uri.encode(Json.encodeToString(signedIn.sortedBy { it.id }))
-                                    navController.navigate("main/$json/$currentId") {
-                                        launchSingleTop = true
-                                    }
+                                    viewModel.setCurrentDestination(route = "main/$json/$currentId")
                                 },
                                 primary = true
                             )
@@ -82,41 +98,41 @@ class MainActivity : ComponentActivity() {
                                 Dialog(onDismissRequest = { openDialog.value = false }) {
                                     Auth.Screen(
                                         modifier = Modifier.fillMaxSize(),
-                                        onBackPressed = { openDialog.value = false },
+                                        onBackPressed = {
+                                            openDialog.value = false
+                                        },
                                         onSuccess = { list, newCurrentId ->
                                             val json =
                                                 Uri.encode(Json.encodeToString((users + list).sortedBy { it.id }))
-                                            navController.navigate(route = "main/$json/$newCurrentId") {
-                                                launchSingleTop = true
-                                            }
+                                            viewModel.setCurrentDestination(route = "main/$json/$newCurrentId")
                                         },
                                         primary = false
                                     )
                                 }
-                            } else {
-
                             }
-
 
                             Main.Screen(
                                 modifier = Modifier.fillMaxSize(),
                                 addUsers = {
                                     openDialog.value = true
                                 },
-                                onBackPressed = { BackHandler { it() } },
+                                onBackPressed = {
+                                    BackHandler {
+                                        it()
+                                        finish()
+                                    }
+                                },
                                 users = users,
                                 currentId = currentId,
                                 updateSignedIn = { newUsers, newCurrentId ->
-                                    if (newUsers.isNotEmpty()) {
+                                    val route: String
+                                    route = if (newUsers.isNotEmpty()) {
                                         val json = Uri.encode(Json.encodeToString(newUsers))
-                                        navController.navigate(route = "main/$json/$newCurrentId") {
-                                            launchSingleTop = true
-                                        }
+                                        "main/$json/$newCurrentId"
                                     } else {
-                                        navController.navigate(route = "auth") {
-                                            launchSingleTop = true
-                                        }
+                                        "auth"
                                     }
+                                    viewModel.setCurrentDestination(route)
                                 }
                             )
                         }
