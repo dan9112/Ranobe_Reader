@@ -14,7 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -27,7 +27,6 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
@@ -44,6 +43,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @Composable
@@ -102,36 +102,41 @@ private fun Content(
     updateSignedIn: (List<UserInfo>, Long?) -> Unit,
     switchIndicator: (Boolean) -> Unit// todo: добавить деактивацию всех интерактивных элементов при включении!
 ) {
-    val signedInState by viewModel.signedIn.collectAsStateWithLifecycle()
-    when (val currentState = signedInState) {
-        ExtendedMainUseCaseState.Default -> {
-            switchIndicator(false)
-        }
+    val context = LocalContext.current
 
-        MainUseCaseState.InProcess -> {
-            switchIndicator(true)
-        }
+    LaunchedEffect(Unit) {
+        viewModel.signedIn.collectLatest {
+            when (val currentState = it) {
+                ExtendedMainUseCaseState.Default -> {
+                    switchIndicator(false)
+                }
 
-        is MainUseCaseState.ResultReceived -> {
-            switchIndicator(false)
-            if (currentState.trigger) {
-                viewModel.caughtTrigger()
-                when (val result = currentState.result) {
-                    is SignOutResultMain.Error -> {
-                        Toast.makeText(
-                            LocalContext.current,
-                            when (val error = result.error) {
-                                is MainUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
-                            },
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                MainUseCaseState.InProcess -> {
+                    switchIndicator(true)
+                }
 
-                    is SignOutResultMain.Success -> {
-                        val list = result.signedIn
-                        Log.e("MyLog", list.joinToString())
+                is MainUseCaseState.ResultReceived -> {
+                    switchIndicator(false)
+                    if (currentState.trigger) {
+                        viewModel.caughtTrigger()
+                        when (val result = currentState.result) {
+                            is SignOutResultMain.Error -> {
+                                Toast.makeText(
+                                    context,
+                                    when (val error = result.error) {
+                                        is MainUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
+                                    },
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
 
-                        updateSignedIn(list, if (list.isEmpty()) null else list.first().id)
+                            is SignOutResultMain.Success -> {
+                                val list = result.signedIn
+                                Log.e("MyLog", list.joinToString())
+
+                                updateSignedIn(list, if (list.isEmpty()) null else list.first().id)
+                            }
+                        }
                     }
                 }
             }
@@ -167,7 +172,6 @@ private fun Content(
                     )// todo: заменить на имя пользователя!
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = user.state.toString(), modifier = Modifier.weight(5f), color = textColor)
-                    val context = LocalContext.current
                     Button(
                         onClick = {
                             if (user.id != currentId) {

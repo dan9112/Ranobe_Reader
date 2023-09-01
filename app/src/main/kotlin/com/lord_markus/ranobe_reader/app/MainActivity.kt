@@ -11,13 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,7 +26,6 @@ import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
 import com.lord_markus.ranobe_reader.main.Main
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -43,7 +40,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val viewModel: MainViewModel = viewModel()
+                    // val viewModel: MainViewModel = viewModel()
                     val navController = rememberNavController()
 
                     /*LaunchedEffect(Unit) {
@@ -51,13 +48,6 @@ class MainActivity : ComponentActivity() {
                             Log.println(ASSERT, "MyLog", "Current backStack:\n${it.joinToString(separator = "\n")}")
                         }
                     }*/
-                    LaunchedEffect(Unit) {
-                        viewModel.currentDestination.collectLatest {
-                            navController.navigate(it) {
-                                popUpTo(0)
-                            }
-                        }
-                    }
                     NavHost(navController = navController, startDestination = "auth") {
                         composable(route = "auth") {
                             Auth.Screen(
@@ -67,7 +57,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onSuccess = { signedIn, currentId ->
                                     val json = Uri.encode(Json.encodeToString(signedIn.sortedBy { it.id }))
-                                    viewModel.setCurrentDestination(route = "main/$json/$currentId")
+                                    navController.navigate("main/$json/$currentId") {
+                                        popUpTo(0)
+                                    }
                                 },
                                 primary = true
                             )
@@ -104,7 +96,9 @@ class MainActivity : ComponentActivity() {
                                         onSuccess = { list, newCurrentId ->
                                             val json =
                                                 Uri.encode(Json.encodeToString((users + list).sortedBy { it.id }))
-                                            viewModel.setCurrentDestination(route = "main/$json/$newCurrentId")
+                                            navController.navigate("main/$json/$newCurrentId") {
+                                                popUpTo(0)
+                                            }
                                         },
                                         primary = false
                                     )
@@ -132,7 +126,9 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         "auth"
                                     }
-                                    viewModel.setCurrentDestination(route)
+                                    navController.navigate(route) {
+                                        popUpTo(0)
+                                    }
                                 }
                             )
                         }
