@@ -58,7 +58,9 @@ class MainActivity : ComponentActivity() {
                                 onSuccess = { signedIn, currentId ->
                                     val json = Uri.encode(Json.encodeToString(signedIn.sortedBy { it.id }))
                                     navController.navigate("main/$json/$currentId") {
-                                        popUpTo(0)
+                                        popUpTo("auth") {
+                                            inclusive = true
+                                        }
                                     }
                                 },
                                 primary = true
@@ -97,7 +99,9 @@ class MainActivity : ComponentActivity() {
                                             val json =
                                                 Uri.encode(Json.encodeToString((users + list).sortedBy { it.id }))
                                             navController.navigate("main/$json/$newCurrentId") {
-                                                popUpTo(0)
+                                                popUpTo("main/{users}/{current}") {
+                                                    inclusive = true
+                                                }
                                             }
                                         },
                                         primary = false
@@ -127,7 +131,9 @@ class MainActivity : ComponentActivity() {
                                         "auth"
                                     }
                                     navController.navigate(route) {
-                                        popUpTo(0)
+                                        popUpTo("main/{users}/{current}") {
+                                            inclusive = true
+                                        }
                                     }
                                 }
                             )
