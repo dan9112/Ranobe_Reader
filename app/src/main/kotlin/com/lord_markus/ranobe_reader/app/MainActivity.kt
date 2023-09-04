@@ -7,24 +7,14 @@ import android.util.Log.ASSERT
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -71,8 +61,7 @@ class MainActivity : ComponentActivity() {
                                             inclusive = true
                                         }
                                     }
-                                },
-                                primary = true
+                                }
                             )
                         }
                         composable(
@@ -96,42 +85,8 @@ class MainActivity : ComponentActivity() {
                                 ?.getLong("current") ?: throw IllegalArgumentException("Empty current id!")
                             Log.i("MyLog", "Input users: $users")
 
-                            val openDialog = rememberSaveable { mutableStateOf(false) }
-                            if (openDialog.value) {
-                                Dialog(onDismissRequest = { openDialog.value = false }) {
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(300.dp)
-                                            .padding(16.dp),
-                                        shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        Auth.Screen(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .background(MaterialTheme.colorScheme.background),
-                                            onBackPressed = {
-                                                openDialog.value = false
-                                            },
-                                            onSuccess = { list, newCurrentId ->
-                                                val json =
-                                                    Uri.encode(Json.encodeToString((users + list).sortedBy { it.id }))
-                                                navController.navigate("main/$json/$newCurrentId") {
-                                                    popUpTo("main/{users}/{current}") {
-                                                        inclusive = true
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-
                             Main.Screen(
                                 modifier = Modifier.fillMaxSize(),
-                                addUsers = {
-                                    openDialog.value = true
-                                },
                                 onBackPressed = {
                                     BackHandler {
                                         it()

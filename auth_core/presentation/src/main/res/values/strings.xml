@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hi">Hi!</string>
-    <string name="change">Change</string>
-    <string name="you_re_fucked">You\'re fucked!</string>
     <string name="login">Login</string>
     <string name="username">Username</string>
     <string name="password">Password</string>

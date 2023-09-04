@@ -1,20 +1,17 @@
 package com.lord_markus.ranobe_reader.main.presentation
 
 import android.util.Log
+import android.util.Log.ASSERT
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -23,10 +20,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreScreen
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
@@ -50,12 +50,16 @@ import kotlinx.coroutines.launch
 fun MainScreen(
     modifier: Modifier,
     onBackPressed: @Composable (() -> Unit) -> Unit,
-    addUsers: () -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
     users: List<UserInfo>,
     currentId: Long,
     updateSignedIn: (List<UserInfo>, Long?) -> Unit
 ) = ConstraintLayout(modifier = modifier) {
+
+    LaunchedEffect(Unit) {
+        viewModel.updateUsers(users)
+    }
+
     val (indicator, content) = createRefs()
     val progressBarVisible = rememberSaveable { mutableStateOf(false) }
 
@@ -64,6 +68,21 @@ fun MainScreen(
         coroutineScope.cancel()
     }
 
+    AuthDialog(
+        show = viewModel.dialogInUse.collectAsStateWithLifecycle(),
+        onSuccess = {
+            viewModel.updateUsers(listOf(it))
+        },
+        onDismiss = {
+            if (viewModel.updated) {
+                updateSignedIn(viewModel.users.value, currentId)
+            } else {
+                viewModel.showDialog(false)
+            }
+        },
+        switchIndicator = { progressBarVisible.value = it }
+    )
+
     Content(
         modifier = Modifier
             .constrainAs(content) {
@@ -71,9 +90,7 @@ fun MainScreen(
                 height = Dimension.fillToConstraints
                 width = Dimension.fillToConstraints
             },
-        addUsers = addUsers,
         coroutineScope = coroutineScope,
-        users = users,
         currentId = currentId,
         viewModel = viewModel,
         updateSignedIn = { users, currentId ->
@@ -83,7 +100,8 @@ fun MainScreen(
         switchIndicator = { progressBarVisible.value = it }
     )
 
-    if (progressBarVisible.value) CircularProgressIndicator(
+    Indicator(
+        show = progressBarVisible,
         modifier = Modifier
             .constrainAs(indicator) {
                 linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
@@ -92,16 +110,53 @@ fun MainScreen(
 }
 
 @Composable
+private fun Indicator(show: State<Boolean>, modifier: Modifier) {
+    if (show.value) CircularProgressIndicator(modifier = modifier)
+}
+
+@Composable
+private fun AuthDialog(
+    show: State<Boolean>,
+    onSuccess: (UserInfo) -> Unit,
+    onDismiss: () -> Unit,
+    switchIndicator: (Boolean) -> Unit
+) {
+    if (show.value) {
+        Log.println(ASSERT, "MyLog", "Dialog created")
+        Dialog(onDismissRequest = onDismiss) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                AuthCoreScreen(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                    showIndicator = { switchIndicator(it) },
+                    onBackPressed = { onDismiss() },
+                    onSuccess = onSuccess,
+                    primary = false
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun Content(
     modifier: Modifier = Modifier,
-    addUsers: () -> Unit,
     coroutineScope: CoroutineScope,
-    users: List<UserInfo>,
     currentId: Long,
     viewModel: MainViewModel,
     updateSignedIn: (List<UserInfo>, Long?) -> Unit,
     switchIndicator: (Boolean) -> Unit// todo: добавить деактивацию всех интерактивных элементов при включении!
 ) {
+    val users: State<List<UserInfo>> = viewModel.users.collectAsStateWithLifecycle()
+    Log.println(ASSERT, "MyLog", "Current user list:\n${users.value.joinToString()}")
+
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -157,7 +212,7 @@ private fun Content(
                 height = Dimension.fillToConstraints
             }
         ) {
-            items(users) { user ->
+            items(users.value) { user ->
                 Row(
                     modifier = if (user.id == currentId) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier,
                     verticalAlignment = Alignment.CenterVertically
@@ -190,7 +245,7 @@ private fun Content(
                                                     Toast.LENGTH_SHORT
                                                 ).show()
 
-                                                SetCurrentResultMain.Success -> updateSignedIn(users, user.id)
+                                                SetCurrentResultMain.Success -> updateSignedIn(users.value, user.id)
                                             }
                                         }
                                     }
@@ -226,7 +281,7 @@ private fun Content(
             }
         )
         Button(
-            onClick = addUsers,
+            onClick = { viewModel.showDialog(true) },
             modifier = Modifier.constrainAs(signInButton) {
                 linkTo(start = startGuideline, end = endGuideline)
                 top.linkTo(anchor = usersView.bottom, margin = 8.dp)
@@ -242,27 +297,31 @@ private fun Content(
 fun PreviewContent() = RanobeReaderTheme {
     Content(
         modifier = Modifier.fillMaxSize(),
-        addUsers = { },
         coroutineScope = CoroutineScope(Dispatchers.Default),
-        users = listOf(
-            UserInfo(id = 0, state = UserState.Admin),
-            UserInfo(id = 1, state = UserState.User),
-            UserInfo(id = 2, state = UserState.User),
-            UserInfo(id = 3, state = UserState.User),
-            UserInfo(id = 4, state = UserState.User)
-        ),
         currentId = 1,
-        viewModel = viewModelStub,
+        viewModel = viewModelStub.apply {
+            updateUsers(
+                listOf(
+                    UserInfo(id = 0, state = UserState.Admin),
+                    UserInfo(id = 1, state = UserState.User),
+                    UserInfo(id = 2, state = UserState.User),
+                    UserInfo(id = 3, state = UserState.User),
+                    UserInfo(id = 4, state = UserState.User)
+                )
+            )
+        },
         updateSignedIn = { _, _ -> },
         switchIndicator = { }
     )
 }
 
+private val userInfoStub by lazy { UserInfo(1, UserState.User) }
+
 private val mainRepositoryStub by lazy {
     object : MainRepository {
-        override suspend fun signOut() = SignOutResultMain.Success(signedIn = listOf(UserInfo(1, UserState.User)))
+        override suspend fun signOut() = SignOutResultMain.Success(signedIn = listOf(userInfoStub))
         override suspend fun signOutWithRemove() =
-            SignOutResultMain.Success(signedIn = listOf(UserInfo(1, UserState.User)))
+            SignOutResultMain.Success(signedIn = listOf(userInfoStub))
 
         override suspend fun setCurrent(id: Long) = SetCurrentResultMain.Success
     }

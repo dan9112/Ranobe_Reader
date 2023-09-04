@@ -10,7 +10,6 @@ kotlin {
 
 dependencies {
     api(project(":core"))
-    api(project(":auth_core:domain"))
 
     implementation(libs.dagger)
     kapt(libs.dagger.compiler)

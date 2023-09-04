@@ -1,4 +1,4 @@
-package com.lord_markus.ranobe_reader.auth.presentation.models
+package com.lord_markus.ranobe_reader.auth_core.presentation.models
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize

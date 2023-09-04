@@ -10,12 +10,10 @@ data object Auth {
     fun Screen(
         modifier: Modifier,
         onBackPressed: @Composable (() -> Unit) -> Unit,
-        onSuccess: (List<UserInfo>, Long) -> Unit,
-        primary: Boolean = false
+        onSuccess: (List<UserInfo>, Long) -> Unit
     ) = AuthScreen(
         modifier = modifier,
         onBackPressed = onBackPressed,
-        onSuccess = onSuccess,
-        primary = primary
+        onSuccess = onSuccess
     )
 }

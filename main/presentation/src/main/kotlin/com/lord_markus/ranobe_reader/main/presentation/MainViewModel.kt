@@ -3,6 +3,7 @@ package com.lord_markus.ranobe_reader.main.presentation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.domain.use_cases.SetCurrentUseCase
@@ -21,6 +22,22 @@ class MainViewModel @Inject constructor(
     private val signOutWithRemoveUseCase: SignOutWithRemoveUseCase,
     private val setCurrentUseCase: SetCurrentUseCase
 ) : ViewModel() {
+    var dialogInUse = savedStateHandler.getStateFlow("dialog", false)
+    fun showDialog(flag: Boolean) {
+        savedStateHandler["dialog"] = flag
+    }
+
+    private var defaultList = true
+    val updated
+        get() = !defaultList
+
+    val users = savedStateHandler.getStateFlow<List<UserInfo>>("unknown_key_0", emptyList())
+
+    fun updateUsers(newUsers: List<UserInfo>) {
+        if (users.value.isNotEmpty()) defaultList = false
+        savedStateHandler["unknown_key_0"] = (users.value + newUsers).sortedBy { it.id }
+    }
+
     val signedIn = savedStateHandler.getStateFlow<ExtendedMainUseCaseState<SignOutResultMain>>(
         LIST_KEY, ExtendedMainUseCaseState.Default
     )
