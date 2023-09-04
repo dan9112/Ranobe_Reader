@@ -11,7 +11,7 @@ data object Auth {
         modifier: Modifier,
         onBackPressed: @Composable (() -> Unit) -> Unit,
         onSuccess: (List<UserInfo>, Long) -> Unit,
-        primary: Boolean
+        primary: Boolean = false
     ) = AuthScreen(
         modifier = modifier,
         onBackPressed = onBackPressed,
