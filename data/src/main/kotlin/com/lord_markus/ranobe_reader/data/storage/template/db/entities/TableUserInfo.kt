@@ -6,7 +6,6 @@ import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.CASCADE
 import androidx.room.PrimaryKey
 import com.lord_markus.ranobe_reader.core.models.UserState
-import com.lord_markus.ranobe_reader.data.storage.template.db.entities.TableUser
 
 @Entity(
     tableName = "users_info",
@@ -23,5 +22,6 @@ data class TableUserInfo(
     @PrimaryKey
     @ColumnInfo(name = "_id")
     val id: Long,
+    val name: String,
     val state: UserState = UserState.User
 )

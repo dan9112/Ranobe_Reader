@@ -9,10 +9,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,6 +32,7 @@ import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -138,7 +141,8 @@ fun MainScreen(
         currentId = currentId,
         users = users,
         showDialog = { viewModel.switchDialog(true) },
-        currentIdTrigger = currentIdTrigger
+        currentIdTrigger = currentIdTrigger,
+        disable = viewModel.progressBarVisible
     )
 
     Indicator(
@@ -197,8 +201,10 @@ private fun Content(
     currentId: Long,
     users: List<UserInfo>,
     showDialog: () -> Unit,
-    currentIdTrigger: (Long) -> Unit
+    currentIdTrigger: (Long) -> Unit,
+    disable: StateFlow<Boolean>
 ) {
+    val disableState = disable.collectAsStateWithLifecycle()
     Log.i("ComposeLog", "Content")
     Log.i("MyLog", "Current user list:\n${users.joinToString()}")
 
@@ -214,13 +220,15 @@ private fun Content(
                 linkTo(top = topGuideline, start = startGuideline, end = endGuideline, bottom = bottomGuideline)
                 width = Dimension.fillToConstraints
                 height = Dimension.fillToConstraints
-            }
+            },
+            userScrollEnabled = !disableState.value
         ) {
             items(users) { user ->
                 AccountRow(
                     buttonTrigger = { currentIdTrigger(user.id) },
                     user = user,
-                    currentUser = user.id == currentId
+                    currentUser = user.id == currentId,
+                    disableState = disableState
                 )
             }
         }
@@ -233,7 +241,7 @@ private fun Content(
             }
         )
         Text(
-            text = "Welcome, user!",
+            text = "Welcome, ${users.find { it.id == currentId }?.name}!",
             fontSize = 30.sp,
             modifier = Modifier.constrainAs(mainTitleView) {
                 linkTo(start = startGuideline, end = endGuideline)
@@ -241,11 +249,12 @@ private fun Content(
             }
         )
         Button(
-            onClick = showDialog,
             modifier = Modifier.constrainAs(signInButton) {
                 linkTo(start = startGuideline, end = endGuideline)
                 top.linkTo(anchor = usersView.bottom, margin = 8.dp)
-            }
+            },
+            onClick = showDialog,
+            enabled = !disableState.value
         ) {
             Text(text = "Add account")
         }
@@ -256,7 +265,8 @@ private fun Content(
 private fun AccountRow(
     buttonTrigger: () -> Unit,
     user: UserInfo,
-    currentUser: Boolean
+    currentUser: Boolean,
+    disableState: State<Boolean>
 ) {
     Row(
         modifier = if (currentUser) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier,
@@ -266,13 +276,19 @@ private fun AccountRow(
             if (currentUser) onPrimary else primary
         }
         Text(
-            text = user.id.toString(),
-            modifier = Modifier.weight(1f),
+            text = user.name,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 2.dp, end = 2.dp),
+            textAlign = TextAlign.Center,
             color = textColor
-        )// todo: заменить на имя пользователя!
+        )
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = user.state.toString(), modifier = Modifier.weight(5f), color = textColor)
-        Button(onClick = buttonTrigger) {
+        Button(
+            onClick = buttonTrigger,
+            enabled = !disableState.value
+        ) {
             Text(text = if (!currentUser) "Switch" else "SignOut")
         }
     }
@@ -285,13 +301,14 @@ fun PreviewContent() = RanobeReaderTheme {
         modifier = Modifier.fillMaxSize(),
         currentId = 1,
         users = listOf(
-            UserInfo(id = 0, state = UserState.Admin),
-            UserInfo(id = 1, state = UserState.User),
-            UserInfo(id = 2, state = UserState.User),
-            UserInfo(id = 3, state = UserState.User),
-            UserInfo(id = 4, state = UserState.User)
+            UserInfo(id = 0, "Анна", state = UserState.Admin),
+            UserInfo(id = 1, "Кортес", state = UserState.User),
+            UserInfo(id = 2, "Данил", state = UserState.User),
+            UserInfo(id = 3, "Элеонора", state = UserState.User),
+            UserInfo(id = 4, "Марк 2", state = UserState.User)
         ),
         showDialog = {},
-        currentIdTrigger = { _ -> }
+        currentIdTrigger = { _ -> },
+        disable = MutableStateFlow(true)
     )
 }

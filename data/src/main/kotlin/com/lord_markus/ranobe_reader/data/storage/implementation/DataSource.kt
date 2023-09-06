@@ -55,7 +55,7 @@ class DataSource @Inject constructor(
                                         id
                                     )
                                 )
-                                UserInfo(id, state)
+                                UserInfo(id = id, name = login, state = state)
                             }
                             .apply {
                                 tableUserAuthState.addState(
@@ -97,7 +97,7 @@ class DataSource @Inject constructor(
                     } else {
                         tableUserAuthState.getAllSignedIn().map {
                             tableUserInfoDao.getInfoById(id = it)?.run {
-                                UserInfo(it, state)
+                                UserInfo(it, name, state)
                             } ?: throw IOException(context.getString(R.string.caught_user_without_info_id, it))
                         }.apply {
                             updateSharedPreferences {
@@ -130,7 +130,8 @@ class DataSource @Inject constructor(
                     if (id < 0) {
                         null
                     } else {
-                        tableUserInfoDao.addInfo(userInfo = TableUserInfo(id, state)) ?: return@let null
+                        tableUserInfoDao.addInfo(userInfo = TableUserInfo(id = id, name = login, state = state))
+                            ?: return@let null
                         tableUserAuthState.addState(userState = TableUserAuthState(id = id, authState = withSignIn))
                             ?: return@let null
                         id
@@ -150,7 +151,7 @@ class DataSource @Inject constructor(
             body = Callable {
                 tableUserAuthState.getAllSignedIn().map {
                     tableUserInfoDao.getInfoById(id = it)?.run {
-                        UserInfo(id, state)
+                        UserInfo(id, name, state)
                     } ?: throw IOException(context.getString(R.string.caught_user_without_info_id, it))
                 }.let { usersInfo ->
                     if (usersInfo.isEmpty()) {

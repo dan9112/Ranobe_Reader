@@ -29,7 +29,7 @@ class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
 
     override suspend fun signIn(login: String, password: String, update: Boolean) = try {
         dataSource.signIn(login, password, update)?.run {
-            SignInResultAuth.Success(userInfo = UserInfo(id = id, state = state))
+            SignInResultAuth.Success(userInfo = UserInfo(id = id, name = name, state = state))
         } ?: SignInResultAuth.Error(error = SignInError.NoSuchUser)
     } catch (e: IOException) {
         SignInResultAuth.Error(error = AuthCoreUseCaseError.StorageError(message = e.message))
@@ -44,7 +44,7 @@ class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
     override suspend fun signUp(login: String, password: String, state: UserState, withSignIn: Boolean) = try {
         dataSource.addUser(login, password, state, withSignIn)?.let {
             SignUpResultAuth.Success(
-                userInfo = UserInfo(id = it, state = state)
+                userInfo = UserInfo(id = it, name = login, state = state)
             )
         }
             ?: SignUpResultAuth.Error(error = SignUpError.LoginAlreadyInUse)

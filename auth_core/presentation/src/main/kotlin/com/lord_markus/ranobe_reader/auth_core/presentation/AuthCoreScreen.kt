@@ -166,9 +166,7 @@ private fun SignUpScreen(
                         is SignUpResultAuth.Success -> {
                             Log.e("MyLog", "Signed up user: ${result.userInfo}")
 
-                            result.run {
-                                onSuccess(userInfo)
-                            }
+                            onSuccess(result.userInfo)
                         }
                     }
                 } else {
@@ -502,7 +500,7 @@ fun PreviewSignUpScreen() = RanobeReaderTheme {
 
 private val authRepositoryStub by lazy {
     object : AuthRepository {
-        private val userInfoStub = UserInfo(id = 0, state = UserState.User)
+        private val userInfoStub = UserInfo(id = 0, name = "Маркус", state = UserState.User)
         override suspend fun getSignedInUsers() = AuthCheckResult.Success.NoSuchUsers
         override suspend fun signIn(login: String, password: String, update: Boolean) =
             SignInResultAuth.Success(userInfo = userInfoStub)
