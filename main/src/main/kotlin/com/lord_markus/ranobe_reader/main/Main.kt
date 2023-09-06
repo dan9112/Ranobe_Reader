@@ -9,13 +9,11 @@ data object Main {
     @Composable
     fun Screen(
         modifier: Modifier,
-        onBackPressed: @Composable (() -> Unit) -> Unit,
         users: List<UserInfo>,
         currentId: Long,
         updateSignedIn: (List<UserInfo>, Long?) -> Unit
     ) = MainScreen(
         modifier = modifier,
-        onBackPressed = onBackPressed,
         users = users,
         currentId = currentId,
         updateSignedIn = updateSignedIn

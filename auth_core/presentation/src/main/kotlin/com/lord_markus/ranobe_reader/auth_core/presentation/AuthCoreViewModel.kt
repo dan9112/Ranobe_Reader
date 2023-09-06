@@ -13,12 +13,9 @@ import com.lord_markus.ranobe_reader.auth_core.presentation.models.AuthScreenSta
 import com.lord_markus.ranobe_reader.auth_core.presentation.models.AuthUseCaseState
 import com.lord_markus.ranobe_reader.auth_core.presentation.models.ExtendedAuthUseCaseState
 import com.lord_markus.ranobe_reader.core.models.UserState
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class AuthCoreViewModel @Inject constructor(
+abstract class AuthCoreViewModel(
     private val savedStateHandler: SavedStateHandle,
     private val signInUseCase: SignInUseCase,
     private val signUpUseCase: SignUpUseCase
@@ -36,7 +33,7 @@ class AuthCoreViewModel @Inject constructor(
         initialValue = ExtendedAuthUseCaseState.Default
     )
 
-    fun trySignIn(login: String, password: String, update: Boolean) {
+    fun trySignIn(login: String, password: String, update: Boolean = true) {
         viewModelScope.launch {
             savedStateHandler[SIGN_IN_STATE_KEY] = AuthUseCaseState.InProcess
             savedStateHandler[SIGN_IN_STATE_KEY] = AuthUseCaseState.ResultReceived(
@@ -74,17 +71,27 @@ class AuthCoreViewModel @Inject constructor(
             if (authScreenState.value == AuthScreenState.SignIn) AuthScreenState.SignUp else AuthScreenState.SignIn
     }
 
-    fun caughtTrigger() {
+    fun resetSignInTrigger() {
         val currentAuthState = signInState.value
-        if (currentAuthState is AuthUseCaseState.ResultReceived) savedStateHandler[SIGN_IN_STATE_KEY] =
-            currentAuthState.apply {
-                trigger = false
-            }
+        if (currentAuthState is AuthUseCaseState.ResultReceived && currentAuthState.result is SignInResultAuth.Error)
+            savedStateHandler[SIGN_IN_STATE_KEY] =
+                AuthUseCaseState.ResultReceived(currentAuthState.result.copy(trigger = false))
     }
 
-    private companion object {
+    val authCoreProgressBarVisible = savedStateHandler.getStateFlow(AUTH_CORE_PROGRESS_BAR_KEY, false)
+
+    fun switchAuthCoreProgressBar(newValue: Boolean) {
+        savedStateHandler[AUTH_CORE_PROGRESS_BAR_KEY] = newValue
+    }
+
+    fun resetSignUpTrigger() {
+        savedStateHandler[SIGN_IN_STATE_KEY] = ExtendedAuthUseCaseState.Default
+    }
+
+    protected companion object {
         const val AUTH_SCREEN_STATE_KEY = "auth_screen_state"
         const val SIGN_IN_STATE_KEY = "sign_in_state"
         const val SIGN_UP_STATE_KEY = "sign_up_state"
+        const val AUTH_CORE_PROGRESS_BAR_KEY = "auth_core_progress_bar"
     }
 }

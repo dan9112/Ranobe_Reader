@@ -9,6 +9,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(private val savedStateHandler: SavedStateHandle) : ViewModel() {
 
+
     val userInfo = savedStateHandler.getStateFlow<Pair<List<UserInfo>, Long>>(
         key = USERS_STATE_KEY,
         initialValue = emptyList<UserInfo>() to -1

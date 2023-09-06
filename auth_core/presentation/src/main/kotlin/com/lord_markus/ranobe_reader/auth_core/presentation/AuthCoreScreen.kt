@@ -2,6 +2,7 @@
 
 package com.lord_markus.ranobe_reader.auth_core.presentation
 
+import android.annotation.SuppressLint
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -11,11 +12,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -23,7 +21,6 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -34,7 +31,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth.domain.models.AuthCheckResult
@@ -44,27 +42,60 @@ import com.lord_markus.ranobe_reader.auth_core.domain.use_cases.SignInUseCase
 import com.lord_markus.ranobe_reader.auth_core.domain.use_cases.SignUpUseCase
 import com.lord_markus.ranobe_reader.auth_core.presentation.models.AuthScreenState
 import com.lord_markus.ranobe_reader.auth_core.presentation.models.AuthUseCaseState
-import com.lord_markus.ranobe_reader.auth_core.presentation.models.ExtendedAuthUseCaseState
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
 import com.vdurmont.emoji.EmojiParser
+import kotlinx.coroutines.flow.StateFlow
 
 private val inputRegex = Regex(pattern = "[\\s\n]+")
 
 @Composable
 fun AuthCoreScreen(
-    viewModel: AuthCoreViewModel = hiltViewModel(),
+    viewModel: AuthCoreViewModel,
     modifier: Modifier,
-    showIndicator: (Boolean) -> Unit,
+    onBackPressed: @Composable (() -> Unit) -> Unit,
+    onSuccess: (UserInfo) -> Unit,
+    primary: Boolean
+) = ConstraintLayout(modifier = modifier) {
+    Log.e("MyLog", "Auth Core Screen")
+    val (content, indicator) = createRefs()
+
+    Content(
+        modifier = Modifier
+            .constrainAs(content) {
+                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                height = Dimension.fillToConstraints
+                width = Dimension.fillToConstraints
+            },
+        viewModel = viewModel,
+        onBackPressed = onBackPressed,
+        onSuccess = onSuccess,
+        primary = primary
+    )
+    Indicator(
+        show = viewModel.authCoreProgressBarVisible,
+        modifier = Modifier
+            .constrainAs(indicator) {
+                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+            }
+    )
+}
+
+@Composable
+private fun Indicator(show: StateFlow<Boolean>, modifier: Modifier) {
+    val showState = show.collectAsStateWithLifecycle()
+    if (showState.value) CircularProgressIndicator(modifier = modifier)
+}
+
+@Composable
+private fun Content(
+    modifier: Modifier,
+    viewModel: AuthCoreViewModel,
     onBackPressed: @Composable (() -> Unit) -> Unit,
     onSuccess: (UserInfo) -> Unit,
     primary: Boolean
 ) = Box(modifier = modifier) {
-    val switchIndicator = { state: Boolean ->
-        showIndicator(state)
-    }
-
     val authScreenState by viewModel.authScreenState.collectAsStateWithLifecycle()
 
     when (authScreenState) {
@@ -72,10 +103,8 @@ fun AuthCoreScreen(
             SignInScreen(
                 viewModel = viewModel,
                 users = emptyList(),
-                onSuccess = {
-                    onSuccess(it)
-                },
-                switchIndicator = switchIndicator,
+                onSuccess = onSuccess,
+                switchIndicator = viewModel::switchAuthCoreProgressBar,
                 primary = primary
             )
         }
@@ -88,7 +117,7 @@ fun AuthCoreScreen(
             SignUpScreen(
                 viewModel = viewModel,
                 onSuccess = onSuccess,
-                switchIndicator = switchIndicator
+                switchIndicator = viewModel::switchAuthCoreProgressBar
             )
         }
     }
@@ -100,53 +129,56 @@ private fun SignUpScreen(
     onSuccess: (UserInfo) -> Unit,
     switchIndicator: (Boolean) -> Unit
 ) {
-    val signUpState by viewModel.signUpState.collectAsStateWithLifecycle()
-
     var login by rememberSaveable { mutableStateOf(value = "") }
     var password by rememberSaveable { mutableStateOf(value = "") }
     var password2 by rememberSaveable { mutableStateOf(value = "") }
     val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
     var errorColor by rememberSaveable { mutableStateOf(value = false) }
+    val enabled = rememberSaveable { mutableStateOf(true) }
 
-    when (val currentState = signUpState) {
-        AuthUseCaseState.InProcess -> {
-            switchIndicator(true)
-            Log.d("MyLog", "Process continues...")
-        }
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        viewModel.signUpState.collect {
+            if (it != AuthUseCaseState.InProcess) {
+                if (it is AuthUseCaseState.ResultReceived) {
+                    if (it.result is SignUpResultAuth.Error) enabled.value = true
 
-        ExtendedAuthUseCaseState.Default -> {
-            switchIndicator(false)
-            Log.d("MyLog", "Process has not been started yet")
-        }
+                    Log.d("MyLog", "Process finished")
+                    when (val result = it.result) {
+                        is SignUpResultAuth.Error -> {
+                            switchIndicator(false)
+                            if (result.trigger) {
+                                viewModel.resetSignUpTrigger()
+                                errorColor = true
+                                Toast.makeText(
+                                    context,
+                                    when (val error = result.error) {
+                                        SignUpError.IncorrectInput -> context.getString(R.string.incorrect_input)
+                                        SignUpError.LoginAlreadyInUse -> context.getString(R.string.login_is_already_in_use)
+                                        SignUpError.PasswordRequirements -> context.getString(R.string.invalid_password)
+                                        is AuthCoreUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
+                                    },
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
 
-        is AuthUseCaseState.ResultReceived -> {
-            switchIndicator(false)
-            if (currentState.trigger) {
-                viewModel.caughtTrigger()
-                Log.d("MyLog", "Process finished")
-                when (val result = currentState.result) {
-                    is SignUpResultAuth.Error -> {
-                        errorColor = true
-                        Toast.makeText(
-                            LocalContext.current,
-                            when (val error = result.error) {
-                                SignUpError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
-                                SignUpError.LoginAlreadyInUse -> stringResource(id = R.string.login_is_already_in_use)
-                                SignUpError.PasswordRequirements -> stringResource(id = R.string.invalid_password)
-                                is AuthCoreUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
-                            },
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                        is SignUpResultAuth.Success -> {
+                            Log.e("MyLog", "Signed up user: ${result.userInfo}")
 
-                    is SignUpResultAuth.Success -> {
-                        Log.e("MyLog", "Signed up user: ${result.userInfo}")
-                        result.run {
-                            onSuccess(userInfo)
+                            result.run {
+                                onSuccess(userInfo)
+                            }
                         }
                     }
+                } else {
+                    enabled.value = true
                 }
+                if (it !is AuthUseCaseState.ResultReceived || it.result !is SignUpResultAuth.Success)
+                    enabled.value = true
+            } else {
+                switchIndicator(true)
+                enabled.value = false
             }
         }
     }
@@ -226,10 +258,7 @@ private fun SignUpScreen(
             colors = colors
         )
         Spacer(modifier = Modifier.height(8.dp))
-        val action: () -> Unit = {
-            viewModel.trySignUp(login, password, password2)
-            keyboardController?.hide()
-        }
+        val action: () -> Unit = { viewModel.trySignUp(login, password, password2) }
         OutlinedTextField(
             value = password2,
             onValueChange = {
@@ -272,13 +301,69 @@ private fun SignInScreen(
     switchIndicator: (Boolean) -> Unit,
     primary: Boolean
 ) {
-    val signInState by viewModel.signInState.collectAsStateWithLifecycle()
-
+    val enabled = rememberSaveable { mutableStateOf(true) }
     var login by rememberSaveable { mutableStateOf(value = "") }
     var password by rememberSaveable { mutableStateOf(value = "") }
     val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
     var errorColor by rememberSaveable { mutableStateOf(value = false) }
+
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        viewModel.signInState.collect {
+            if (it != AuthUseCaseState.InProcess) {
+//                switchIndicator(false)
+                if (it is AuthUseCaseState.ResultReceived) {
+                    if (it.result is SignInResultAuth.Error) enabled.value = true
+
+                    Log.d("MyLog", "Process finished")
+                    when (val result = it.result) {
+                        is SignInResultAuth.Error -> {
+                            switchIndicator(false)
+                            enabled.value = true
+                            if (result.trigger) {
+                                viewModel.resetSignInTrigger()
+                                errorColor = true
+                                Toast.makeText(
+                                    context,
+                                    when (val error = result.error) {
+                                        SignInError.IncorrectInput -> context.getString(R.string.incorrect_input)
+                                        SignInError.NoSuchUser -> context.getString(R.string.no_such_user)
+                                        is AuthCoreUseCaseError.StorageError -> error.message
+                                    },
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+
+                        is SignInResultAuth.Success -> {
+                            Log.i("MyLog", "Texts: $login\t$password")
+                            Log.e("MyLog", "Signed in user: ${result.userInfo}")
+
+                            result.userInfo.let {
+                                if (!users.contains(it)) {
+                                    onSuccess(it)
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.user_has_already_added),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    errorColor = true
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    enabled.value = true
+                    switchIndicator(false)
+                }
+            } else {
+                switchIndicator(true)
+                enabled.value = false
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -314,7 +399,7 @@ private fun SignInScreen(
             keyboardActions = KeyboardActions(
                 onNext = { focusManager.moveFocus(FocusDirection.Next) }
             ),
-            enabled = signInState != AuthUseCaseState.InProcess,
+            enabled = enabled.value,
             trailingIcon = {
                 if (login.isNotBlank()) Icon(
                     imageVector = Icons.Default.Clear,
@@ -327,8 +412,7 @@ private fun SignInScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
         val action: () -> Unit = {
-            viewModel.trySignIn(login = login, password = password, update = primary)
-            keyboardController?.hide()
+            viewModel.trySignIn(login = login, password = password)
         }
         OutlinedTextField(
             value = password,
@@ -349,7 +433,7 @@ private fun SignInScreen(
             keyboardActions = KeyboardActions(
                 onDone = { action() }
             ),
-            enabled = signInState != AuthUseCaseState.InProcess,
+            enabled = enabled.value,
             trailingIcon = {
                 if (password.isNotBlank()) Icon(
                     imageVector = Icons.Default.Clear,
@@ -363,7 +447,7 @@ private fun SignInScreen(
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = action,
-            enabled = signInState != AuthUseCaseState.InProcess
+            enabled = enabled.value
         ) {
             Text(text = stringResource(id = if (primary) R.string.login_verb else R.string.add_user))
         }
@@ -378,62 +462,6 @@ private fun SignInScreen(
                     viewModel.switchAuthScreenState()
                 }
             )
-        }
-    }
-
-    when (val currentState = signInState) {
-        ExtendedAuthUseCaseState.Default -> {
-            switchIndicator(false)
-            Log.d("MyLog", "Process has not been started yet")
-        }
-
-        AuthUseCaseState.InProcess -> {
-            switchIndicator(true)
-            Log.d("MyLog", "Process continues...")
-        }
-
-        is AuthUseCaseState.ResultReceived -> {
-            switchIndicator(false)
-            if (currentState.trigger) {
-                viewModel.caughtTrigger()
-                Log.d("MyLog", "Process finished")
-                when (val result = currentState.result) {
-                    is SignInResultAuth.Error -> {
-                        errorColor = true
-                        Toast.makeText(
-                            LocalContext.current,
-                            when (val error = result.error) {
-                                SignInError.IncorrectInput -> stringResource(id = R.string.incorrect_input)
-                                SignInError.NoSuchUser -> stringResource(id = R.string.no_such_user)
-                                is AuthCoreUseCaseError.StorageError -> error.message
-                            },
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    is SignInResultAuth.Success -> {
-                        Log.i("MyLog", "Texts: $login\t$password")
-                        Log.e("MyLog", "Signed in user: ${result.userInfo}")
-
-                        result.userInfo.let {
-                            if (!users.contains(it)) {
-                                onSuccess(it)
-                            } else {
-                                Toast.makeText(
-                                    LocalContext.current,
-                                    stringResource(id = R.string.user_has_already_added),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                errorColor = true
-                            }
-                        }
-                        if (!primary) {
-                            login = ""
-                            password = ""
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -485,9 +513,10 @@ private val authRepositoryStub by lazy {
 }
 
 private val viewModelStub by lazy {
-    AuthCoreViewModel(
+    @SuppressLint("StaticFieldLeak")
+    object : AuthCoreViewModel(
         savedStateHandler = SavedStateHandle(),
         signInUseCase = SignInUseCase(authRepository = authRepositoryStub),
         signUpUseCase = SignUpUseCase(authRepository = authRepositoryStub)
-    )
+    ) {}
 }

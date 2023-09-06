@@ -9,7 +9,7 @@ sealed interface AuthUseCaseState<in T : AuthUseCaseResult> : ExtendedAuthUseCas
     data object InProcess : AuthUseCaseState<AuthUseCaseResult>
 
     @Parcelize
-    data class ResultReceived<T : AuthUseCaseResult>(val result: T, var trigger: Boolean = true) : AuthUseCaseState<T> {
+    data class ResultReceived<T : AuthUseCaseResult>(val result: T) : AuthUseCaseState<T> {
         override fun equals(other: Any?) = other is ResultReceived<*> && other.result == result
         override fun hashCode() = result.hashCode()
     }

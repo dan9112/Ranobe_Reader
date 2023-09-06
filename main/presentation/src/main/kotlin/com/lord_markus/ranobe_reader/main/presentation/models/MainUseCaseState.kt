@@ -8,7 +8,7 @@ sealed interface MainUseCaseState<in T : MainUseCaseResult> : ExtendedMainUseCas
     data object InProcess : MainUseCaseState<MainUseCaseResult>
 
     @Parcelize
-    data class ResultReceived<T : MainUseCaseResult>(val result: T, var trigger: Boolean = true) : MainUseCaseState<T> {
+    data class ResultReceived<T : MainUseCaseResult>(val result: T) : MainUseCaseState<T> {
         override fun equals(other: Any?) = other is ResultReceived<*> && other.result == result
         override fun hashCode() = result.hashCode()
     }

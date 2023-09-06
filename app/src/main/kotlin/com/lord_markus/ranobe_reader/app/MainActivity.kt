@@ -3,7 +3,6 @@ package com.lord_markus.ranobe_reader.app
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.util.Log.ASSERT
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -44,17 +43,20 @@ class MainActivity : ComponentActivity() {
 
                     LaunchedEffect(Unit) {
                         navController.currentBackStack.collect {
-                            Log.println(ASSERT, "MyLog", "Current backStack:\n${it.joinToString(separator = "\n")}")
+                            Log.d("MyLog", "Current backStack:\n${it.joinToString(separator = "\n")}")
                         }
                     }
                     NavHost(navController = navController, startDestination = "auth") {
                         composable(route = "auth") {
+                            Log.v("MyLog", "Auth Destination")
+
                             Auth.Screen(
                                 modifier = Modifier.fillMaxSize(),
                                 onBackPressed = {
                                     BackHandler { it() }
                                 },
                                 onSuccess = { signedIn, currentId ->
+                                    Log.i("MyLog", "Auth success!")
                                     val json = Uri.encode(Json.encodeToString(signedIn.sortedBy { it.id }))
                                     navController.navigate("main/$json/$currentId") {
                                         popUpTo("auth") {
@@ -75,29 +77,23 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         ) { backStackEntry ->
-                            val users = backStackEntry
+                            Log.v("MyLog", "Main Destination")
+                            val args = backStackEntry
                                 .arguments
+                            val users = args
                                 ?.getString("users")
                                 ?.let { Json.decodeFromString<List<UserInfo>>(it) }
                                 ?: throw IllegalArgumentException("Empty signed in list!")
-                            val currentId = backStackEntry
-                                .arguments
-                                ?.getLong("current") ?: throw IllegalArgumentException("Empty current id!")
-                            Log.i("MyLog", "Input users: $users")
+                            if (!args.containsKey("current")) throw IllegalArgumentException("Empty current id!")
+                            val currentId: Long = args.getLong("current")
 
                             Main.Screen(
                                 modifier = Modifier.fillMaxSize(),
-                                onBackPressed = {
-                                    BackHandler {
-                                        it()
-                                        finish()
-                                    }
-                                },
                                 users = users,
                                 currentId = currentId,
                                 updateSignedIn = { newUsers, newCurrentId ->
-                                    val route: String
-                                    route = if (newUsers.isNotEmpty()) {
+                                    Log.i("MyLog", "Update with: $newCurrentId\n${newUsers.joinToString()}")
+                                    val route = if (newUsers.isNotEmpty()) {
                                         val json = Uri.encode(Json.encodeToString(newUsers))
                                         "main/$json/$newCurrentId"
                                     } else {

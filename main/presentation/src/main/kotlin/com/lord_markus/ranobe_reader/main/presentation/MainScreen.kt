@@ -1,7 +1,6 @@
 package com.lord_markus.ranobe_reader.main.presentation
 
 import android.util.Log
-import android.util.Log.ASSERT
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,10 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,63 +20,112 @@ import androidx.compose.ui.window.Dialog
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreScreen
+import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreViewModel
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
 import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
-import com.lord_markus.ranobe_reader.main.domain.repository.MainRepository
-import com.lord_markus.ranobe_reader.main.domain.use_cases.SetCurrentUseCase
-import com.lord_markus.ranobe_reader.main.domain.use_cases.SignOutUseCase
-import com.lord_markus.ranobe_reader.main.domain.use_cases.SignOutWithRemoveUseCase
-import com.lord_markus.ranobe_reader.main.presentation.models.ExtendedMainUseCaseState
 import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @Composable
 fun MainScreen(
     modifier: Modifier,
-    onBackPressed: @Composable (() -> Unit) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
     users: List<UserInfo>,
     currentId: Long,
     updateSignedIn: (List<UserInfo>, Long?) -> Unit
 ) = ConstraintLayout(modifier = modifier) {
-
-    LaunchedEffect(Unit) {
-        viewModel.updateUsers(users)
-    }
-
+    Log.i("ComposeLog", "MainScreen")
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val (indicator, content) = createRefs()
-    val progressBarVisible = rememberSaveable { mutableStateOf(false) }
 
-    val coroutineScope = CoroutineScope(Dispatchers.Main)
-    onBackPressed {
-        coroutineScope.cancel()
+    val currentIdTrigger: (Long) -> Unit = { id ->
+        with(receiver = viewModel) {
+            if (id != currentId) {
+                coroutineScope.launch {
+                    setCurrentFlow.collect {
+                        when (it) {
+                            MainUseCaseState.InProcess -> {
+                                viewModel.switchProgressBar(true)
+                            }
+
+                            is MainUseCaseState.ResultReceived -> {
+                                viewModel.switchProgressBar(false)
+                                when (it.result) {
+                                    is SetCurrentResultMain.Error -> Toast.makeText(
+                                        context,
+                                        "Attempt to switch account failed!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    SetCurrentResultMain.Success -> updateSignedIn(users, id)
+                                }
+                            }
+                        }
+                    }
+                }
+                setCurrent(id)
+            } else {
+                coroutineScope.launch {
+                    signOutFlow.collect {
+                        when (val currentState = it) {
+                            MainUseCaseState.InProcess -> {
+                                viewModel.switchProgressBar(true)
+                            }
+
+                            is MainUseCaseState.ResultReceived -> {
+                                viewModel.switchProgressBar(false)
+                                when (val result = currentState.result) {
+                                    is SignOutResultMain.Error -> {
+                                        if (result.trigger) {
+                                            caughtTrigger()
+                                            Toast.makeText(
+                                                context,
+                                                when (val error = result.error) {
+                                                    is MainUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
+                                                },
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+
+                                    is SignOutResultMain.Success -> {
+                                        val list = result.signedIn
+                                        Log.i("MyLog", list.joinToString())
+
+                                        updateSignedIn(
+                                            list,
+                                            if (list.isEmpty()) null else list.first().id
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                signOut()
+            }
+        }
     }
 
     AuthDialog(
-        show = viewModel.dialogInUse.collectAsStateWithLifecycle(),
-        onSuccess = {
-            viewModel.updateUsers(listOf(it))
+        show = viewModel.dialogInUse,
+        viewModel = viewModel,
+        resetAuthCoreViewModel = viewModel::resetAuthCoreViewModel,
+        onSuccess = { user ->
+            updateSignedIn((users + user).sortedBy { it.id }, user.id)
         },
         onDismiss = {
-            if (viewModel.updated) {
-                updateSignedIn(viewModel.users.value, currentId)
-            } else {
-                viewModel.showDialog(false)
-            }
-        },
-        switchIndicator = { progressBarVisible.value = it }
+            Log.i("MyLog", "Dialog dismissed")
+            viewModel.switchDialog(false)
+        }
     )
 
     Content(
@@ -90,18 +135,14 @@ fun MainScreen(
                 height = Dimension.fillToConstraints
                 width = Dimension.fillToConstraints
             },
-        coroutineScope = coroutineScope,
         currentId = currentId,
-        viewModel = viewModel,
-        updateSignedIn = { users, currentId ->
-            coroutineScope.cancel()
-            updateSignedIn(users, currentId)
-        },
-        switchIndicator = { progressBarVisible.value = it }
+        users = users,
+        showDialog = { viewModel.switchDialog(true) },
+        currentIdTrigger = currentIdTrigger
     )
 
     Indicator(
-        show = progressBarVisible,
+        show = viewModel.progressBarVisible,
         modifier = Modifier
             .constrainAs(indicator) {
                 linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
@@ -110,93 +151,56 @@ fun MainScreen(
 }
 
 @Composable
-private fun Indicator(show: State<Boolean>, modifier: Modifier) {
-    if (show.value) CircularProgressIndicator(modifier = modifier)
+private fun Indicator(show: StateFlow<Boolean>, modifier: Modifier) {
+    val showState = show.collectAsStateWithLifecycle()
+    Log.i("ComposeLog", "Indicator - ${showState.value}")
+    if (showState.value) CircularProgressIndicator(modifier = modifier)
 }
 
 @Composable
 private fun AuthDialog(
-    show: State<Boolean>,
+    show: StateFlow<Boolean>,
+    viewModel: AuthCoreViewModel,
+    resetAuthCoreViewModel: () -> Unit,
     onSuccess: (UserInfo) -> Unit,
-    onDismiss: () -> Unit,
-    switchIndicator: (Boolean) -> Unit
+    onDismiss: () -> Unit
 ) {
-    if (show.value) {
-        Log.println(ASSERT, "MyLog", "Dialog created")
+    val showState = show.collectAsStateWithLifecycle()
+    Log.i("ComposeLog", "AuthDialog - ${showState.value}")
+    if (showState.value) {
         Dialog(onDismissRequest = onDismiss) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
-                    .padding(16.dp),
+                    .height(300.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 AuthCoreScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background),
-                    showIndicator = { switchIndicator(it) },
+                    viewModel = viewModel,
                     onBackPressed = { onDismiss() },
                     onSuccess = onSuccess,
                     primary = false
                 )
             }
         }
+    } else {
+        resetAuthCoreViewModel()
     }
 }
 
 @Composable
 private fun Content(
     modifier: Modifier = Modifier,
-    coroutineScope: CoroutineScope,
     currentId: Long,
-    viewModel: MainViewModel,
-    updateSignedIn: (List<UserInfo>, Long?) -> Unit,
-    switchIndicator: (Boolean) -> Unit// todo: добавить деактивацию всех интерактивных элементов при включении!
+    users: List<UserInfo>,
+    showDialog: () -> Unit,
+    currentIdTrigger: (Long) -> Unit
 ) {
-    val users: State<List<UserInfo>> = viewModel.users.collectAsStateWithLifecycle()
-    Log.println(ASSERT, "MyLog", "Current user list:\n${users.value.joinToString()}")
-
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        viewModel.signedIn.collectLatest {
-            when (val currentState = it) {
-                ExtendedMainUseCaseState.Default -> {
-                    switchIndicator(false)
-                }
-
-                MainUseCaseState.InProcess -> {
-                    switchIndicator(true)
-                }
-
-                is MainUseCaseState.ResultReceived -> {
-                    switchIndicator(false)
-                    if (currentState.trigger) {
-                        viewModel.caughtTrigger()
-                        when (val result = currentState.result) {
-                            is SignOutResultMain.Error -> {
-                                Toast.makeText(
-                                    context,
-                                    when (val error = result.error) {
-                                        is MainUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
-                                    },
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-
-                            is SignOutResultMain.Success -> {
-                                val list = result.signedIn
-                                Log.e("MyLog", list.joinToString())
-
-                                updateSignedIn(list, if (list.isEmpty()) null else list.first().id)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    Log.i("ComposeLog", "Content")
+    Log.i("MyLog", "Current user list:\n${users.joinToString()}")
 
     ConstraintLayout(modifier = modifier) {
         val (usersView, usersTitleView, mainTitleView, signInButton) = createRefs()
@@ -212,56 +216,12 @@ private fun Content(
                 height = Dimension.fillToConstraints
             }
         ) {
-            items(users.value) { user ->
-                Row(
-                    modifier = if (user.id == currentId) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val textColor = MaterialTheme.colorScheme.run {
-                        if (user.id == currentId) onPrimary else primary
-                    }
-                    Text(
-                        text = user.id.toString(),
-                        modifier = Modifier.weight(1f),
-                        color = textColor
-                    )// todo: заменить на имя пользователя!
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = user.state.toString(), modifier = Modifier.weight(5f), color = textColor)
-                    Button(
-                        onClick = {
-                            if (user.id != currentId) {
-                                val setCurrentStateCollector = FlowCollector<MainUseCaseState<SetCurrentResultMain>> {
-                                    when (it) {
-                                        MainUseCaseState.InProcess -> {
-                                            switchIndicator(true)
-                                        }
-
-                                        is MainUseCaseState.ResultReceived -> {
-                                            switchIndicator(false)
-                                            when (it.result) {
-                                                is SetCurrentResultMain.Error -> Toast.makeText(
-                                                    context,
-                                                    "Attempt to switch account failed!",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-
-                                                SetCurrentResultMain.Success -> updateSignedIn(users.value, user.id)
-                                            }
-                                        }
-                                    }
-                                }
-                                coroutineScope.launch {
-                                    viewModel.current.collect(setCurrentStateCollector)
-                                }
-                                viewModel.setCurrent(user.id)
-                            } else {
-                                viewModel.signOut()
-                            }
-                        }
-                    ) {
-                        Text(text = if (user.id != currentId) "Switch" else "SignOut")
-                    }
-                }
+            items(users) { user ->
+                AccountRow(
+                    buttonTrigger = { currentIdTrigger(user.id) },
+                    user = user,
+                    currentUser = user.id == currentId
+                )
             }
         }
 
@@ -281,7 +241,7 @@ private fun Content(
             }
         )
         Button(
-            onClick = { viewModel.showDialog(true) },
+            onClick = showDialog,
             modifier = Modifier.constrainAs(signInButton) {
                 linkTo(start = startGuideline, end = endGuideline)
                 top.linkTo(anchor = usersView.bottom, margin = 8.dp)
@@ -292,46 +252,46 @@ private fun Content(
     }
 }
 
+@Composable
+private fun AccountRow(
+    buttonTrigger: () -> Unit,
+    user: UserInfo,
+    currentUser: Boolean
+) {
+    Row(
+        modifier = if (currentUser) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val textColor = MaterialTheme.colorScheme.run {
+            if (currentUser) onPrimary else primary
+        }
+        Text(
+            text = user.id.toString(),
+            modifier = Modifier.weight(1f),
+            color = textColor
+        )// todo: заменить на имя пользователя!
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = user.state.toString(), modifier = Modifier.weight(5f), color = textColor)
+        Button(onClick = buttonTrigger) {
+            Text(text = if (!currentUser) "Switch" else "SignOut")
+        }
+    }
+}
+
 @Preview(device = "spec:parent=Nexus 10")
 @Composable
 fun PreviewContent() = RanobeReaderTheme {
     Content(
         modifier = Modifier.fillMaxSize(),
-        coroutineScope = CoroutineScope(Dispatchers.Default),
         currentId = 1,
-        viewModel = viewModelStub.apply {
-            updateUsers(
-                listOf(
-                    UserInfo(id = 0, state = UserState.Admin),
-                    UserInfo(id = 1, state = UserState.User),
-                    UserInfo(id = 2, state = UserState.User),
-                    UserInfo(id = 3, state = UserState.User),
-                    UserInfo(id = 4, state = UserState.User)
-                )
-            )
-        },
-        updateSignedIn = { _, _ -> },
-        switchIndicator = { }
-    )
-}
-
-private val userInfoStub by lazy { UserInfo(1, UserState.User) }
-
-private val mainRepositoryStub by lazy {
-    object : MainRepository {
-        override suspend fun signOut() = SignOutResultMain.Success(signedIn = listOf(userInfoStub))
-        override suspend fun signOutWithRemove() =
-            SignOutResultMain.Success(signedIn = listOf(userInfoStub))
-
-        override suspend fun setCurrent(id: Long) = SetCurrentResultMain.Success
-    }
-}
-
-private val viewModelStub by lazy {
-    MainViewModel(
-        savedStateHandler = SavedStateHandle(),
-        signOutUseCase = SignOutUseCase(mainRepositoryStub),
-        signOutWithRemoveUseCase = SignOutWithRemoveUseCase(mainRepositoryStub),
-        setCurrentUseCase = SetCurrentUseCase(mainRepositoryStub)
+        users = listOf(
+            UserInfo(id = 0, state = UserState.Admin),
+            UserInfo(id = 1, state = UserState.User),
+            UserInfo(id = 2, state = UserState.User),
+            UserInfo(id = 3, state = UserState.User),
+            UserInfo(id = 4, state = UserState.User)
+        ),
+        showDialog = {},
+        currentIdTrigger = { _ -> }
     )
 }
