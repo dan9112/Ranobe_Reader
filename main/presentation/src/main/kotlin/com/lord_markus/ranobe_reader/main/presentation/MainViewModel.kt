@@ -26,6 +26,7 @@ class MainViewModel @Inject constructor(
     signInUseCase: SignInUseCase,
     signUpUseCase: SignUpUseCase
 ) : AuthCoreViewModel(savedStateHandler, signInUseCase, signUpUseCase) {
+
     val signOutFlow = savedStateHandler.getStateFlow<MainUseCaseState<SignOutResultMain>>(
         LIST_KEY, MainUseCaseState.InProcess
     )

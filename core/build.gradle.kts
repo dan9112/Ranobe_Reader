@@ -7,7 +7,3 @@ plugins {
 kotlin {
     jvmToolchain(AndroidConfig.COMPILE_JVM_VERSION)
 }
-
-dependencies {
-    api(libs.kotlinx.serialization.json)
-}

@@ -1,6 +1,5 @@
 package com.lord_markus.ranobe_reader.app
 
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -14,21 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavType
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.lord_markus.ranobe_reader.auth.Auth
-import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
 import com.lord_markus.ranobe_reader.main.Main
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class RootActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -38,8 +33,30 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // val viewModel: MainViewModel = viewModel()
+                    val viewModel: RootViewModel = hiltViewModel()
                     val navController = rememberNavController()
+
+                    LaunchedEffect(Unit) {
+                        viewModel.navigate.collect {
+                            it?.let { hasSignedIn ->
+                                with(receiver = navController) {
+                                    when (hasSignedIn) {
+                                        true -> navigate("main") {
+                                            popUpTo("auth") {
+                                                inclusive = true
+                                            }
+                                        }
+
+                                        false -> navigate("auth") {
+                                            popUpTo("main") {
+                                                inclusive = true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     LaunchedEffect(Unit) {
                         navController.currentBackStack.collect {
@@ -57,55 +74,35 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onSuccess = { signedIn, currentId ->
                                     Log.i("MyLog", "Auth success!")
-                                    val json = Uri.encode(Json.encodeToString(signedIn.sortedBy { it.id }))
-                                    navController.navigate("main/$json/$currentId") {
-                                        popUpTo("auth") {
-                                            inclusive = true
-                                        }
+                                    with(receiver = viewModel) {
+                                        updateUsersAndCurrent(signedIn, currentId)
                                     }
                                 }
                             )
                         }
-                        composable(
-                            route = "main/{users}/{current}",
-                            arguments = listOf(
-                                navArgument(name = "users") {
-                                    type = NavType.StringType
-                                },
-                                navArgument(name = "current") {
-                                    type = NavType.LongType
-                                }
-                            )
-                        ) { backStackEntry ->
+                        composable(route = "main") { backStackEntry ->
                             Log.v("MyLog", "Main Destination")
-                            val args = backStackEntry
-                                .arguments
-                            val users = args
-                                ?.getString("users")
-                                ?.let { Json.decodeFromString<List<UserInfo>>(it) }
-                                ?: throw IllegalArgumentException("Empty signed in list!")
-                            if (!args.containsKey("current")) throw IllegalArgumentException("Empty current id!")
-                            val currentId: Long = args.getLong("current")
 
-                            Main.Screen(
-                                modifier = Modifier.fillMaxSize(),
-                                users = users,
-                                currentId = currentId,
-                                updateSignedIn = { newUsers, newCurrentId ->
-                                    Log.i("MyLog", "Update with: $newCurrentId\n${newUsers.joinToString()}")
-                                    val route = if (newUsers.isNotEmpty()) {
-                                        val json = Uri.encode(Json.encodeToString(newUsers))
-                                        "main/$json/$newCurrentId"
-                                    } else {
-                                        "auth"
-                                    }
-                                    navController.navigate(route) {
-                                        popUpTo("main/{users}/{current}") {
-                                            inclusive = true
+                            with(receiver = viewModel) {
+                                Main.Screen(
+                                    modifier = Modifier.fillMaxSize(),
+                                    usersWithCurrentFlow = signedInWithCurrent,
+                                    addUser = { user, newCurrent ->
+                                        signedInWithCurrent.value.run {
+                                            updateUsersAndCurrent(first + user, if (newCurrent) user.id else second)
                                         }
+                                    },
+                                    removeUser = { users ->
+                                        signedInWithCurrent.value.run {
+                                            updateUsersAndCurrent(users, users.firstOrNull()?.id)
+                                        }
+                                    },
+                                    updateCurrent = { newCurrentId ->
+                                        updateUsersAndCurrent(signedInWithCurrent.value.first, newCurrentId)
+                                        Log.i("MyLog", "Update with: $newCurrentId")
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }

@@ -99,15 +99,17 @@ class DataSource @Inject constructor(
                             tableUserInfoDao.getInfoById(id = it)?.run {
                                 UserInfo(it, name, state)
                             } ?: throw IOException(context.getString(R.string.caught_user_without_info_id, it))
-                        }.apply {
-                            updateSharedPreferences {
-                                if (isNotEmpty()) {
-                                    putLong(CURRENT_USER_ID_KEY, first().id)
-                                } else {
-                                    remove(CURRENT_USER_ID_KEY)
+                        }
+                            .sortedBy { it.name }
+                            .apply {
+                                updateSharedPreferences {
+                                    if (isNotEmpty()) {
+                                        putLong(CURRENT_USER_ID_KEY, first().id)
+                                    } else {
+                                        remove(CURRENT_USER_ID_KEY)
+                                    }
                                 }
                             }
-                        }
                     }
                 } else throw IOException(context.getString(R.string.no_signed_in_users))
             }
@@ -153,19 +155,21 @@ class DataSource @Inject constructor(
                     tableUserInfoDao.getInfoById(id = it)?.run {
                         UserInfo(id, name, state)
                     } ?: throw IOException(context.getString(R.string.caught_user_without_info_id, it))
-                }.let { usersInfo ->
-                    if (usersInfo.isEmpty()) {
-                        null
-                    } else usersInfo to if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
-                        sharedPreferences.getLong(CURRENT_USER_ID_KEY, -1L)
-                    } else {// никогда не должен срабатывать, страховка!
-                        usersInfo.first().id.also { id ->
-                            updateSharedPreferences {
-                                putLong(CURRENT_USER_ID_KEY, id)
+                }
+                    .sortedBy { it.name }
+                    .let { usersInfo ->
+                        if (usersInfo.isEmpty()) {
+                            null
+                        } else usersInfo to if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
+                            sharedPreferences.getLong(CURRENT_USER_ID_KEY, -1L)
+                        } else {// никогда не должен срабатывать, страховка!
+                            usersInfo.first().id.also { id ->
+                                updateSharedPreferences {
+                                    putLong(CURRENT_USER_ID_KEY, id)
+                                }
                             }
                         }
                     }
-                }
             }
         )
     }

@@ -40,18 +40,19 @@ import kotlinx.coroutines.launch
 fun MainScreen(
     modifier: Modifier,
     viewModel: MainViewModel = hiltViewModel(),
-    users: List<UserInfo>,
-    currentId: Long,
-    updateSignedIn: (List<UserInfo>, Long?) -> Unit
+    usersWithCurrentFlow: StateFlow<Pair<List<UserInfo>, Long?>>,
+    addUser: (UserInfo, Boolean) -> Unit,
+    removeUser: (List<UserInfo>) -> Unit,
+    updateCurrent: (Long) -> Unit
 ) = ConstraintLayout(modifier = modifier) {
     Log.i("ComposeLog", "MainScreen")
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val (indicator, content) = createRefs()
 
-    val currentIdTrigger: (Long) -> Unit = { id ->
+    val currentIdTrigger: (Long?) -> Unit = {
         with(receiver = viewModel) {
-            if (id != currentId) {
+            it?.let { id ->
                 coroutineScope.launch {
                     setCurrentFlow.collect {
                         when (it) {
@@ -68,14 +69,14 @@ fun MainScreen(
                                         Toast.LENGTH_SHORT
                                     ).show()
 
-                                    SetCurrentResultMain.Success -> updateSignedIn(users, id)
+                                    SetCurrentResultMain.Success -> updateCurrent(id)
                                 }
                             }
                         }
                     }
                 }
                 setCurrent(id)
-            } else {
+            } ?: run {
                 coroutineScope.launch {
                     signOutFlow.collect {
                         when (val currentState = it) {
@@ -103,10 +104,7 @@ fun MainScreen(
                                         val list = result.signedIn
                                         Log.i("MyLog", list.joinToString())
 
-                                        updateSignedIn(
-                                            list,
-                                            if (list.isEmpty()) null else list.first().id
-                                        )
+                                        removeUser(list)
                                     }
                                 }
                             }
@@ -123,7 +121,8 @@ fun MainScreen(
         viewModel = viewModel,
         resetAuthCoreViewModel = viewModel::resetAuthCoreViewModel,
         onSuccess = { user ->
-            updateSignedIn((users + user).sortedBy { it.id }, user.id)
+            addUser(user, true)
+            viewModel.switchDialog(false)
         },
         onDismiss = {
             Log.i("MyLog", "Dialog dismissed")
@@ -138,8 +137,7 @@ fun MainScreen(
                 height = Dimension.fillToConstraints
                 width = Dimension.fillToConstraints
             },
-        currentId = currentId,
-        users = users,
+        usersWithCurrentFlow = usersWithCurrentFlow,
         showDialog = { viewModel.switchDialog(true) },
         currentIdTrigger = currentIdTrigger,
         disable = viewModel.progressBarVisible
@@ -198,15 +196,16 @@ private fun AuthDialog(
 @Composable
 private fun Content(
     modifier: Modifier = Modifier,
-    currentId: Long,
-    users: List<UserInfo>,
+    usersWithCurrentFlow: StateFlow<Pair<List<UserInfo>, Long?>>,
     showDialog: () -> Unit,
-    currentIdTrigger: (Long) -> Unit,
+    currentIdTrigger: (Long?) -> Unit,
     disable: StateFlow<Boolean>
 ) {
+    val usersWithCurrentState = usersWithCurrentFlow.collectAsStateWithLifecycle()
+
     val disableState = disable.collectAsStateWithLifecycle()
     Log.i("ComposeLog", "Content")
-    Log.i("MyLog", "Current user list:\n${users.joinToString()}")
+    Log.i("MyLog", "Current user list:\n${usersWithCurrentState.value.first.joinToString()}")
 
     ConstraintLayout(modifier = modifier) {
         val (usersView, usersTitleView, mainTitleView, signInButton) = createRefs()
@@ -223,25 +222,29 @@ private fun Content(
             },
             userScrollEnabled = !disableState.value
         ) {
-            items(users) { user ->
+            items(usersWithCurrentState.value.first) { user ->
                 AccountRow(
-                    buttonTrigger = { currentIdTrigger(user.id) },
+                    buttonTrigger = { currentIdTrigger(if (it) user.id else null) },
                     user = user,
-                    currentUser = user.id == currentId,
+                    currentUser = user.id == usersWithCurrentState.value.second,
                     disableState = disableState
                 )
             }
         }
 
         Text(
-            text = "Signed in users",
+            text = "Accounts",
             modifier = Modifier.constrainAs(usersTitleView) {
                 linkTo(start = startGuideline, end = endGuideline)
                 bottom.linkTo(anchor = usersView.top, margin = 8.dp)
             }
         )
         Text(
-            text = "Welcome, ${users.find { it.id == currentId }?.name}!",
+            text = "Welcome, ${
+                usersWithCurrentState.value.run {
+                    first.find { it.id == second }
+                }?.name
+            }!",
             fontSize = 30.sp,
             modifier = Modifier.constrainAs(mainTitleView) {
                 linkTo(start = startGuideline, end = endGuideline)
@@ -263,7 +266,7 @@ private fun Content(
 
 @Composable
 private fun AccountRow(
-    buttonTrigger: () -> Unit,
+    buttonTrigger: (Boolean) -> Unit,
     user: UserInfo,
     currentUser: Boolean,
     disableState: State<Boolean>
@@ -286,7 +289,7 @@ private fun AccountRow(
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = user.state.toString(), modifier = Modifier.weight(5f), color = textColor)
         Button(
-            onClick = buttonTrigger,
+            onClick = { buttonTrigger(!currentUser) },
             enabled = !disableState.value
         ) {
             Text(text = if (!currentUser) "Switch" else "SignOut")
@@ -299,13 +302,14 @@ private fun AccountRow(
 fun PreviewContent() = RanobeReaderTheme {
     Content(
         modifier = Modifier.fillMaxSize(),
-        currentId = 1,
-        users = listOf(
-            UserInfo(id = 0, "Анна", state = UserState.Admin),
-            UserInfo(id = 1, "Кортес", state = UserState.User),
-            UserInfo(id = 2, "Данил", state = UserState.User),
-            UserInfo(id = 3, "Элеонора", state = UserState.User),
-            UserInfo(id = 4, "Марк 2", state = UserState.User)
+        usersWithCurrentFlow = MutableStateFlow(
+            listOf(
+                UserInfo(id = 0, "Анна", state = UserState.Admin),
+                UserInfo(id = 1, "Кортес", state = UserState.User),
+                UserInfo(id = 2, "Данил", state = UserState.User),
+                UserInfo(id = 3, "Элеонора", state = UserState.User),
+                UserInfo(id = 4, "Марк 2", state = UserState.User)
+            ) to 1
         ),
         showDialog = {},
         currentIdTrigger = { _ -> },
