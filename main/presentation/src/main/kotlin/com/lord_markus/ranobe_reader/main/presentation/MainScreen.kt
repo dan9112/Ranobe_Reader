@@ -8,9 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,7 +22,7 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreScreen
-import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreViewModel
+import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreScreenData
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
@@ -32,7 +30,6 @@ import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -40,7 +37,7 @@ import kotlinx.coroutines.launch
 fun MainScreen(
     modifier: Modifier,
     viewModel: MainViewModel = hiltViewModel(),
-    usersWithCurrentFlow: StateFlow<Pair<List<UserInfo>, Long?>>,
+    usersWithCurrentState: State<Pair<List<UserInfo>, Long?>>,
     addUser: (UserInfo, Boolean) -> Unit,
     removeUser: (List<UserInfo>) -> Unit,
     updateCurrent: (Long) -> Unit
@@ -48,6 +45,7 @@ fun MainScreen(
     Log.i("ComposeLog", "MainScreen")
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
     val (indicator, content) = createRefs()
 
     val currentIdTrigger: (Long?) -> Unit = {
@@ -118,7 +116,18 @@ fun MainScreen(
 
     AuthDialog(
         show = viewModel.dialogInUse,
-        viewModel = viewModel,
+        authCoreScreenData = AuthCoreScreenData(
+            authScreenFlow = viewModel.authScreenFlow,
+            switchAuthScreenState = viewModel::switchAuthScreenState,
+            signInState = viewModel.signInState,
+            signUpState = viewModel.signUpState,
+            trySignIn = viewModel::trySignIn,
+            trySignUp = viewModel::trySignUp,
+            resetSignInTrigger = viewModel::resetSignInTrigger,
+            resetSignUpTrigger = viewModel::resetSignUpTrigger,
+            switchAuthCoreProgressBar = viewModel::switchAuthCoreProgressBar,
+            indicatorShowFlow = viewModel.authCoreProgressBarVisible
+        ),
         resetAuthCoreViewModel = viewModel::resetAuthCoreViewModel,
         onSuccess = { user ->
             addUser(user, true)
@@ -137,10 +146,10 @@ fun MainScreen(
                 height = Dimension.fillToConstraints
                 width = Dimension.fillToConstraints
             },
-        usersWithCurrentFlow = usersWithCurrentFlow,
+        usersWithCurrentState = usersWithCurrentState,
         showDialog = { viewModel.switchDialog(true) },
         currentIdTrigger = currentIdTrigger,
-        disable = viewModel.progressBarVisible
+        disableState = viewModel.progressBarVisible.collectAsStateWithLifecycle()
     )
 
     Indicator(
@@ -162,7 +171,7 @@ private fun Indicator(show: StateFlow<Boolean>, modifier: Modifier) {
 @Composable
 private fun AuthDialog(
     show: StateFlow<Boolean>,
-    viewModel: AuthCoreViewModel,
+    authCoreScreenData: AuthCoreScreenData,
     resetAuthCoreViewModel: () -> Unit,
     onSuccess: (UserInfo) -> Unit,
     onDismiss: () -> Unit
@@ -181,7 +190,7 @@ private fun AuthDialog(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background),
-                    viewModel = viewModel,
+                    authCoreScreenData = authCoreScreenData,
                     onBackPressed = { onDismiss() },
                     onSuccess = onSuccess,
                     primary = false
@@ -196,14 +205,11 @@ private fun AuthDialog(
 @Composable
 private fun Content(
     modifier: Modifier = Modifier,
-    usersWithCurrentFlow: StateFlow<Pair<List<UserInfo>, Long?>>,
+    usersWithCurrentState: State<Pair<List<UserInfo>, Long?>>,
     showDialog: () -> Unit,
     currentIdTrigger: (Long?) -> Unit,
-    disable: StateFlow<Boolean>
+    disableState: State<Boolean>
 ) {
-    val usersWithCurrentState = usersWithCurrentFlow.collectAsStateWithLifecycle()
-
-    val disableState = disable.collectAsStateWithLifecycle()
     Log.i("ComposeLog", "Content")
     Log.i("MyLog", "Current user list:\n${usersWithCurrentState.value.first.joinToString()}")
 
@@ -300,19 +306,36 @@ private fun AccountRow(
 @Preview(device = "spec:parent=Nexus 10")
 @Composable
 fun PreviewContent() = RanobeReaderTheme {
+    val usersWithCurrentState = remember {
+        mutableStateOf<Pair<List<UserInfo>, Long?>>(
+            listOf(
+                UserInfo(id = 0, name = "Анна", state = UserState.Admin),
+                UserInfo(id = 1, name = "Кортес", state = UserState.User),
+                UserInfo(id = 2, name = "Данил", state = UserState.User),
+                UserInfo(id = 3, name = "Элеонора", state = UserState.User),
+                UserInfo(id = 4, name = "Марк 2", state = UserState.User)
+            ).sortedBy { it.name } to 1
+        )
+    }
+    val disableState = remember {
+        mutableStateOf(false)
+    }
+
     Content(
         modifier = Modifier.fillMaxSize(),
-        usersWithCurrentFlow = MutableStateFlow(
-            listOf(
-                UserInfo(id = 0, "Анна", state = UserState.Admin),
-                UserInfo(id = 1, "Кортес", state = UserState.User),
-                UserInfo(id = 2, "Данил", state = UserState.User),
-                UserInfo(id = 3, "Элеонора", state = UserState.User),
-                UserInfo(id = 4, "Марк 2", state = UserState.User)
-            ) to 1
-        ),
+        usersWithCurrentState = usersWithCurrentState,
         showDialog = {},
-        currentIdTrigger = { _ -> },
-        disable = MutableStateFlow(true)
+        currentIdTrigger = { id ->
+            id?.let {
+                usersWithCurrentState.run {
+                    value = value.first to it
+                }
+            } ?: run {
+                val current =
+                    usersWithCurrentState.value.first.filterNot { it.id == usersWithCurrentState.value.second }
+                usersWithCurrentState.value = current to current.firstOrNull()?.id
+            }
+        },
+        disableState = disableState
     )
 }

@@ -44,6 +44,7 @@ dependencies {
     api(platform(compose.bom))
     api(compose.material3)
     api(compose.bundles.ui)
+    debugApi(compose.ui.tooling.preview)
 
     implementation(androidx.core.ktx)
 }

@@ -69,7 +69,7 @@ dependencies {
     androidTestImplementation(androidx.test.espresso.core)
     androidTestImplementation(platform(compose.bom))
     androidTestImplementation(compose.ui.test.manifest)*/
-    debugImplementation(compose.ui.tooling)
+//    debugImplementation(compose.ui.tooling)
     debugImplementation(compose.ui.test.manifest)
 
     implementation(libs.hilt.android)

@@ -20,7 +20,7 @@ abstract class AuthCoreViewModel(
     private val signInUseCase: SignInUseCase,
     private val signUpUseCase: SignUpUseCase
 ) : ViewModel() {
-    val authScreenState = savedStateHandler.getStateFlow<AuthScreenState>(
+    val authScreenFlow = savedStateHandler.getStateFlow<AuthScreenState>(
         key = AUTH_SCREEN_STATE_KEY,
         initialValue = AuthScreenState.SignIn
     )
@@ -68,7 +68,7 @@ abstract class AuthCoreViewModel(
 
     fun switchAuthScreenState() {
         savedStateHandler[AUTH_SCREEN_STATE_KEY] =
-            if (authScreenState.value == AuthScreenState.SignIn) AuthScreenState.SignUp else AuthScreenState.SignIn
+            if (authScreenFlow.value == AuthScreenState.SignIn) AuthScreenState.SignUp else AuthScreenState.SignIn
     }
 
     fun resetSignInTrigger() {

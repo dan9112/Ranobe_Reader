@@ -18,4 +18,4 @@ lifecycle-runtime = { group = "androidx.lifecycle", name = "lifecycle-runtime-co
 ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 
 [bundles]
-ui = ["ui", "ui-graphics", "ui-tooling-preview"]
+ui = ["ui", "ui-graphics"]

@@ -8,12 +8,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -86,7 +84,7 @@ class RootActivity : ComponentActivity() {
                             with(receiver = viewModel) {
                                 Main.Screen(
                                     modifier = Modifier.fillMaxSize(),
-                                    usersWithCurrentFlow = signedInWithCurrent,
+                                    usersWithCurrentState = signedInWithCurrent.collectAsStateWithLifecycle(),
                                     addUser = { user, newCurrent ->
                                         signedInWithCurrent.value.run {
                                             updateUsersAndCurrent(first + user, if (newCurrent) user.id else second)
@@ -109,16 +107,4 @@ class RootActivity : ComponentActivity() {
             }
         }
     }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) = Text(
-    text = "Hello $name!",
-    modifier = modifier
-)
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() = RanobeReaderTheme {
-    Greeting("Android")
 }
