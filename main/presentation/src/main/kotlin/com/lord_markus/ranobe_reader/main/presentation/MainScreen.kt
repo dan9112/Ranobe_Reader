@@ -15,6 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
@@ -208,7 +211,15 @@ private fun Screen(
 
             TopAppBar(
                 title = {
-                    Text("Ranobe Re@der")
+                    Text(
+                        "R@nobe Reader",
+                        fontFamily = FontFamily(
+                            Font(
+                                R.font.holitter_gothic,
+                                FontWeight.Normal
+                            )
+                        )
+                    )
                 },
                 actions = {
                     var expanded by remember { mutableStateOf(false) }
@@ -309,8 +320,7 @@ private fun AppBarAccount(
             .clickable(enabled = !disableState) { buttonTrigger(!currentUser) }
             .padding(all = 4.dp),
         textAlign = TextAlign.Center,
-        fontSize = fontSize,
-        color = MaterialTheme.colorScheme.primary
+        fontSize = fontSize
     )
 }
 
