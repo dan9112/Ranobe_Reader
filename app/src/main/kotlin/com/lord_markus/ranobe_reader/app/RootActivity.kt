@@ -87,7 +87,10 @@ class RootActivity : ComponentActivity() {
                                     usersWithCurrentState = signedInWithCurrent.collectAsStateWithLifecycle(),
                                     addUser = { user, newCurrent ->
                                         signedInWithCurrent.value.run {
-                                            updateUsersAndCurrent(first + user, if (newCurrent) user.id else second)
+                                            updateUsersAndCurrent(
+                                                (first + user).sortedBy { it.name },
+                                                if (newCurrent) user.id else second
+                                            )
                                         }
                                     },
                                     removeUser = { users ->

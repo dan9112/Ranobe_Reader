@@ -1,12 +1,15 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.lord_markus.ranobe_reader.main.presentation
 
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -23,6 +27,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreScreen
 import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreScreenData
+import com.lord_markus.ranobe_reader.auth_core.presentation.models.AuthScreenState
+import com.lord_markus.ranobe_reader.auth_core.presentation.models.ExtendedAuthUseCaseState
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
@@ -30,7 +36,7 @@ import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
@@ -41,142 +47,119 @@ fun MainScreen(
     addUser: (UserInfo, Boolean) -> Unit,
     removeUser: (List<UserInfo>) -> Unit,
     updateCurrent: (Long) -> Unit
-) = ConstraintLayout(modifier = modifier) {
+) {
     Log.i("ComposeLog", "MainScreen")
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val (indicator, content) = createRefs()
-
-    val currentIdTrigger: (Long?) -> Unit = {
+    val currentIdTrigger: (Long) -> Unit = { id ->
         with(receiver = viewModel) {
-            it?.let { id ->
-                coroutineScope.launch {
-                    setCurrentFlow.collect {
-                        when (it) {
-                            MainUseCaseState.InProcess -> {
-                                viewModel.switchProgressBar(true)
-                            }
+            coroutineScope.launch {
+                setCurrentFlow.collect {
+                    when (it) {
+                        MainUseCaseState.InProcess -> {
+                            viewModel.switchProgressBar(true)
+                        }
 
-                            is MainUseCaseState.ResultReceived -> {
-                                viewModel.switchProgressBar(false)
-                                when (it.result) {
-                                    is SetCurrentResultMain.Error -> Toast.makeText(
-                                        context,
-                                        "Attempt to switch account failed!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                        is MainUseCaseState.ResultReceived -> {
+                            viewModel.switchProgressBar(false)
+                            when (it.result) {
+                                is SetCurrentResultMain.Error -> Toast.makeText(
+                                    context,
+                                    "Attempt to switch account failed!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
 
-                                    SetCurrentResultMain.Success -> updateCurrent(id)
-                                }
+                                SetCurrentResultMain.Success -> updateCurrent(id)
                             }
                         }
                     }
                 }
-                setCurrent(id)
-            } ?: run {
-                coroutineScope.launch {
-                    signOutFlow.collect {
-                        when (val currentState = it) {
-                            MainUseCaseState.InProcess -> {
-                                viewModel.switchProgressBar(true)
-                            }
-
-                            is MainUseCaseState.ResultReceived -> {
-                                viewModel.switchProgressBar(false)
-                                when (val result = currentState.result) {
-                                    is SignOutResultMain.Error -> {
-                                        if (result.trigger) {
-                                            caughtTrigger()
-                                            Toast.makeText(
-                                                context,
-                                                when (val error = result.error) {
-                                                    is MainUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
-                                                },
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-
-                                    is SignOutResultMain.Success -> {
-                                        val list = result.signedIn
-                                        Log.i("MyLog", list.joinToString())
-
-                                        removeUser(list)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                signOut()
             }
+            setCurrent(id)
         }
     }
 
-    AuthDialog(
-        show = viewModel.dialogInUse,
-        authCoreScreenData = AuthCoreScreenData(
-            authScreenFlow = viewModel.authScreenFlow,
-            switchAuthScreenState = viewModel::switchAuthScreenState,
-            signInState = viewModel.signInState,
-            signUpState = viewModel.signUpState,
-            trySignIn = viewModel::trySignIn,
-            trySignUp = viewModel::trySignUp,
-            resetSignInTrigger = viewModel::resetSignInTrigger,
-            resetSignUpTrigger = viewModel::resetSignUpTrigger,
-            switchAuthCoreProgressBar = viewModel::switchAuthCoreProgressBar,
-            indicatorShowFlow = viewModel.authCoreProgressBarVisible
-        ),
-        resetAuthCoreViewModel = viewModel::resetAuthCoreViewModel,
-        onSuccess = { user ->
-            addUser(user, true)
-            viewModel.switchDialog(false)
-        },
-        onDismiss = {
-            Log.i("MyLog", "Dialog dismissed")
-            viewModel.switchDialog(false)
-        }
-    )
+    val removeUser = {
+        coroutineScope.launch {
+            viewModel.signOutFlow.collect {
+                when (val currentState = it) {
+                    MainUseCaseState.InProcess -> {
+                        viewModel.switchProgressBar(true)
+                    }
 
-    Content(
-        modifier = Modifier
-            .constrainAs(content) {
-                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-                height = Dimension.fillToConstraints
-                width = Dimension.fillToConstraints
-            },
-        usersWithCurrentState = usersWithCurrentState,
-        showDialog = { viewModel.switchDialog(true) },
-        currentIdTrigger = currentIdTrigger,
-        disableState = viewModel.progressBarVisible.collectAsStateWithLifecycle()
-    )
+                    is MainUseCaseState.ResultReceived -> {
+                        viewModel.switchProgressBar(false)
+                        when (val result = currentState.result) {
+                            is SignOutResultMain.Error -> {
+                                if (result.trigger) {
+                                    viewModel.caughtTrigger()
+                                    Toast.makeText(
+                                        context,
+                                        when (val error = result.error) {
+                                            is MainUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
+                                        },
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
 
-    Indicator(
-        show = viewModel.progressBarVisible,
-        modifier = Modifier
-            .constrainAs(indicator) {
-                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                            is SignOutResultMain.Success -> {
+                                val list = result.signedIn
+                                Log.i("MyLog", list.joinToString())
+
+                                removeUser(list)
+                            }
+                        }
+                    }
+                }
             }
+        }
+        viewModel.signOut()
+    }
+    val authCoreScreenData = viewModel.run {
+        AuthCoreScreenData(
+            authScreenFlow = authScreenFlow,
+            switchAuthScreenState = ::switchAuthScreenState,
+            signInState = signInState,
+            signUpState = signUpState,
+            trySignIn = ::trySignIn,
+            trySignUp = ::trySignUp,
+            resetSignInTrigger = ::resetSignInTrigger,
+            resetSignUpTrigger = ::resetSignUpTrigger,
+            switchAuthCoreProgressBar = ::switchAuthCoreProgressBar,
+            indicatorShowFlow = authCoreProgressBarVisible
+        )
+    }
+
+    Screen(
+        modifier = modifier,
+        usersWithCurrentState = usersWithCurrentState,
+        currentIdTrigger = currentIdTrigger,
+        switchDialog = viewModel::switchDialog,
+        authCoreScreenData = authCoreScreenData,
+        indicatorVisibleState = viewModel.progressBarVisible.collectAsStateWithLifecycle(),
+        dialogShowState = viewModel.dialogInUse.collectAsStateWithLifecycle(),
+        addUser = addUser,
+        resetAuthCoreViewModel = viewModel::resetAuthCoreViewModel,
+        removeUser = removeUser
     )
 }
 
 @Composable
-private fun Indicator(show: StateFlow<Boolean>, modifier: Modifier) {
-    val showState = show.collectAsStateWithLifecycle()
+private fun Indicator(showState: State<Boolean>, modifier: Modifier) {
     Log.i("ComposeLog", "Indicator - ${showState.value}")
     if (showState.value) CircularProgressIndicator(modifier = modifier)
 }
 
 @Composable
 private fun AuthDialog(
-    show: StateFlow<Boolean>,
+    showState: State<Boolean>,
     authCoreScreenData: AuthCoreScreenData,
     resetAuthCoreViewModel: () -> Unit,
     onSuccess: (UserInfo) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val showState = show.collectAsStateWithLifecycle()
     Log.i("ComposeLog", "AuthDialog - ${showState.value}")
     if (showState.value) {
         Dialog(onDismissRequest = onDismiss) {
@@ -203,102 +186,146 @@ private fun AuthDialog(
 }
 
 @Composable
-private fun Content(
-    modifier: Modifier = Modifier,
+private fun Screen(
+    modifier: Modifier,
     usersWithCurrentState: State<Pair<List<UserInfo>, Long?>>,
-    showDialog: () -> Unit,
-    currentIdTrigger: (Long?) -> Unit,
-    disableState: State<Boolean>
+    currentIdTrigger: (Long) -> Unit,
+    switchDialog: (Boolean) -> Unit,
+    authCoreScreenData: AuthCoreScreenData,
+    indicatorVisibleState: State<Boolean>,
+    dialogShowState: State<Boolean>,
+    addUser: (UserInfo, Boolean) -> Unit,
+    removeUser: () -> Unit,
+    resetAuthCoreViewModel: () -> Unit
 ) {
+    val disableState = indicatorVisibleState.value
     Log.i("ComposeLog", "Content")
-    Log.i("MyLog", "Current user list:\n${usersWithCurrentState.value.first.joinToString()}")
 
-    ConstraintLayout(modifier = modifier) {
-        val (usersView, usersTitleView, mainTitleView, signInButton) = createRefs()
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            val fontSize = 20.sp
 
-        val topGuideline = createGuidelineFromTop(fraction = 0.4f)
-        val bottomGuideline = createGuidelineFromBottom(fraction = 0.45f)
-        val startGuideline = createGuidelineFromStart(fraction = 0.25f)
-        val endGuideline = createGuidelineFromEnd(fraction = 0.25f)
-        LazyColumn(
-            modifier = Modifier.constrainAs(usersView) {
-                linkTo(top = topGuideline, start = startGuideline, end = endGuideline, bottom = bottomGuideline)
-                width = Dimension.fillToConstraints
-                height = Dimension.fillToConstraints
-            },
-            userScrollEnabled = !disableState.value
-        ) {
-            items(usersWithCurrentState.value.first) { user ->
-                AccountRow(
-                    buttonTrigger = { currentIdTrigger(if (it) user.id else null) },
-                    user = user,
-                    currentUser = user.id == usersWithCurrentState.value.second,
-                    disableState = disableState
-                )
-            }
+            TopAppBar(
+                title = {
+                    Text("Ranobe Re@der")
+                },
+                actions = {
+                    var expanded by remember { mutableStateOf(false) }
+
+                    Row(
+                        modifier = Modifier.clickable {
+                            if (usersWithCurrentState.value.first.size > 1) expanded = !expanded
+                        },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = "Account image"
+                        )
+
+                        Text(
+                            text = usersWithCurrentState.value.run {
+                                first.find { it.id == second }
+                            }?.name.toString(),
+                            fontSize = fontSize
+                        )
+
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            usersWithCurrentState.value.first.forEach { user ->
+                                if (user.id != usersWithCurrentState.value.second) AppBarAccount(
+                                    buttonTrigger = {
+                                        expanded = false
+                                        currentIdTrigger(user.id)
+                                    },
+                                    fontSize = fontSize,
+                                    user = user,
+                                    currentUser = user.id == usersWithCurrentState.value.second,
+                                    disableState = disableState
+                                )
+                            }
+                        }
+                    }
+                }
+            )
         }
-
-        Text(
-            text = "Accounts",
-            modifier = Modifier.constrainAs(usersTitleView) {
-                linkTo(start = startGuideline, end = endGuideline)
-                bottom.linkTo(anchor = usersView.top, margin = 8.dp)
-            }
-        )
-        Text(
-            text = "Welcome, ${
-                usersWithCurrentState.value.run {
-                    first.find { it.id == second }
-                }?.name
-            }!",
-            fontSize = 30.sp,
-            modifier = Modifier.constrainAs(mainTitleView) {
-                linkTo(start = startGuideline, end = endGuideline)
-                bottom.linkTo(anchor = usersTitleView.top, margin = 8.dp)
-            }
-        )
-        Button(
-            modifier = Modifier.constrainAs(signInButton) {
-                linkTo(start = startGuideline, end = endGuideline)
-                top.linkTo(anchor = usersView.bottom, margin = 8.dp)
-            },
-            onClick = showDialog,
-            enabled = !disableState.value
+    ) {
+        ConstraintLayout(
+            modifier = Modifier
+                .padding(it)
+                .fillMaxSize()
         ) {
-            Text(text = "Add account")
+
+            val (indicator, content) = createRefs()
+
+            AuthDialog(
+                showState = dialogShowState,
+                authCoreScreenData = authCoreScreenData,
+                resetAuthCoreViewModel = resetAuthCoreViewModel,
+                onSuccess = { user ->
+                    addUser(user, true)
+                    switchDialog(false)
+                },
+                onDismiss = {
+                    Log.i("MyLog", "Dialog dismissed")
+                    switchDialog(false)
+                }
+            )
+
+            Content(
+                modifier = Modifier
+                    .constrainAs(content) {
+                        linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                        height = Dimension.fillToConstraints
+                        width = Dimension.fillToConstraints
+                    },
+                switchAddDialog = { switchDialog(true) },
+                removeUser = removeUser
+            )
+
+            Indicator(
+                modifier = Modifier
+                    .constrainAs(indicator) {
+                        linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                    },
+                showState = indicatorVisibleState
+            )
         }
     }
 }
 
 @Composable
-private fun AccountRow(
+private fun AppBarAccount(
     buttonTrigger: (Boolean) -> Unit,
+    fontSize: TextUnit,
     user: UserInfo,
     currentUser: Boolean,
-    disableState: State<Boolean>
+    disableState: Boolean
 ) {
+    Text(
+        text = user.name,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !disableState) { buttonTrigger(!currentUser) }
+            .padding(all = 4.dp),
+        textAlign = TextAlign.Center,
+        fontSize = fontSize,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+@Composable
+private fun Content(modifier: Modifier, switchAddDialog: () -> Unit, removeUser: () -> Unit) {
     Row(
-        modifier = if (currentUser) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier,
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val textColor = MaterialTheme.colorScheme.run {
-            if (currentUser) onPrimary else primary
+        Button(onClick = switchAddDialog) {
+            Text("Add account")
         }
-        Text(
-            text = user.name,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 2.dp, end = 2.dp),
-            textAlign = TextAlign.Center,
-            color = textColor
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = user.state.toString(), modifier = Modifier.weight(5f), color = textColor)
-        Button(
-            onClick = { buttonTrigger(!currentUser) },
-            enabled = !disableState.value
-        ) {
-            Text(text = if (!currentUser) "Switch" else "SignOut")
+        Button(onClick = removeUser) {
+            Text("Log out")
         }
     }
 }
@@ -317,25 +344,32 @@ fun PreviewContent() = RanobeReaderTheme {
             ).sortedBy { it.name } to 1
         )
     }
-    val disableState = remember {
-        mutableStateOf(false)
-    }
+    val progressBarState = remember { mutableStateOf(false) }
+    val dialogShowState = remember { mutableStateOf(false) }
 
-    Content(
+    val authCoreScreenData = AuthCoreScreenData(
+        authScreenFlow = MutableStateFlow(AuthScreenState.SignIn),
+        switchAuthScreenState = {},
+        signInState = MutableStateFlow(ExtendedAuthUseCaseState.Default),
+        signUpState = MutableStateFlow(ExtendedAuthUseCaseState.Default),
+        trySignIn = { _, _, _ -> },
+        trySignUp = { _, _, _ -> },
+        resetSignInTrigger = {},
+        resetSignUpTrigger = {},
+        switchAuthCoreProgressBar = {},
+        indicatorShowFlow = MutableStateFlow(false)
+    )
+
+    Screen(
         modifier = Modifier.fillMaxSize(),
         usersWithCurrentState = usersWithCurrentState,
-        showDialog = {},
-        currentIdTrigger = { id ->
-            id?.let {
-                usersWithCurrentState.run {
-                    value = value.first to it
-                }
-            } ?: run {
-                val current =
-                    usersWithCurrentState.value.first.filterNot { it.id == usersWithCurrentState.value.second }
-                usersWithCurrentState.value = current to current.firstOrNull()?.id
-            }
-        },
-        disableState = disableState
+        currentIdTrigger = {},
+        switchDialog = {},
+        authCoreScreenData = authCoreScreenData,
+        indicatorVisibleState = progressBarState,
+        dialogShowState = dialogShowState,
+        addUser = { _, _ -> },
+        resetAuthCoreViewModel = {},
+        removeUser = {}
     )
 }
