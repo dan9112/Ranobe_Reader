@@ -9,12 +9,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +42,8 @@ import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -55,7 +60,7 @@ fun MainScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val currentIdTrigger: (Long) -> Unit = { id ->
+    val switchUserAction = { id: Long ->
         with(receiver = viewModel) {
             coroutineScope.launch {
                 setCurrentFlow.collect {
@@ -137,8 +142,9 @@ fun MainScreen(
 
     Screen(
         modifier = modifier,
+        coroutineScope = coroutineScope,
         usersWithCurrentState = usersWithCurrentState,
-        currentIdTrigger = currentIdTrigger,
+        currentIdTrigger = switchUserAction,
         switchDialog = viewModel::switchDialog,
         authCoreScreenData = authCoreScreenData,
         indicatorVisibleState = viewModel.progressBarVisible.collectAsStateWithLifecycle(),
@@ -162,35 +168,33 @@ private fun AuthDialog(
     resetAuthCoreViewModel: () -> Unit,
     onSuccess: (UserInfo) -> Unit,
     onDismiss: () -> Unit
-) {
-    Log.i("ComposeLog", "AuthDialog - ${showState.value}")
-    if (showState.value) {
-        Dialog(onDismissRequest = onDismiss) {
-            Card(
+) = if (showState.value) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            AuthCoreScreen(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                AuthCoreScreen(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
-                    authCoreScreenData = authCoreScreenData,
-                    onBackPressed = { onDismiss() },
-                    onSuccess = onSuccess,
-                    primary = false
-                )
-            }
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+                authCoreScreenData = authCoreScreenData,
+                onBackPressed = { onDismiss() },
+                onSuccess = onSuccess,
+                primary = false
+            )
         }
-    } else {
-        resetAuthCoreViewModel()
     }
+} else {
+    resetAuthCoreViewModel()
 }
 
 @Composable
 private fun Screen(
     modifier: Modifier,
+    coroutineScope: CoroutineScope,
     usersWithCurrentState: State<Pair<List<UserInfo>, Long?>>,
     currentIdTrigger: (Long) -> Unit,
     switchDialog: (Boolean) -> Unit,
@@ -201,106 +205,143 @@ private fun Screen(
     removeUser: () -> Unit,
     resetAuthCoreViewModel: () -> Unit
 ) {
-    val disableState = indicatorVisibleState.value
-    Log.i("ComposeLog", "Content")
+    val navigationDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    ModalNavigationDrawer(
+        drawerState = navigationDrawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Text("Drawer title")
+                Divider()
+                NavigationDrawerItem(
+                    label = {
+                        Text(stringResource(R.string.settings))
+                    },
+                    selected = false,
+                    onClick = { /*todo: переключиться на настройки*/ },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = "Navigation drawer settings item icon"
+                        )
+                    }
+                )
+            }
+        }
+    ) {
+        Scaffold(
+            modifier = modifier,
+            topBar = {
+                val fontSize = 20.sp
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            val fontSize = 20.sp
-
-            TopAppBar(
-                title = {
-                    Text(
-                        "R@nobe Reader",
-                        fontFamily = FontFamily(
-                            Font(
-                                R.font.holitter_gothic,
-                                FontWeight.Normal
+                TopAppBar(
+                    title = {
+                        Text(
+                            "R@nobe Reader",
+                            fontFamily = FontFamily(
+                                Font(
+                                    R.font.holitter_gothic,
+                                    FontWeight.Normal
+                                )
                             )
                         )
-                    )
-                },
-                actions = {
-                    var expanded by remember { mutableStateOf(false) }
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    navigationDrawerState.apply {
+                                        if (isClosed) open() else close()
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Menu,
+                                contentDescription = "Navigation icon"
+                            )
+                        }
+                    },
+                    actions = {
+                        var expanded by remember { mutableStateOf(false) }
 
-                    Row(
-                        modifier = Modifier.clickable(enabled = usersWithCurrentState.value.first.size > 1) {
-                            expanded = !expanded
-                        },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = "Account image"
-                        )
+                        Row(
+                            modifier = Modifier.clickable(enabled = usersWithCurrentState.value.first.size > 1) {
+                                expanded = !expanded
+                            },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Person,
+                                contentDescription = "Account image"
+                            )
 
-                        Text(
-                            text = usersWithCurrentState.value.run {
-                                first.find { it.id == second }
-                            }?.name.toString(),
-                            fontSize = fontSize
-                        )
+                            Text(
+                                text = usersWithCurrentState.value.run {
+                                    first.find { it.id == second }
+                                }?.name.toString(),
+                                fontSize = fontSize
+                            )
 
-                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                            usersWithCurrentState.value.first.forEach { user ->
-                                if (user.id != usersWithCurrentState.value.second) AppBarAccount(
-                                    buttonTrigger = {
-                                        expanded = false
-                                        currentIdTrigger(user.id)
-                                    },
-                                    fontSize = fontSize,
-                                    user = user,
-                                    currentUser = user.id == usersWithCurrentState.value.second,
-                                    disableState = disableState
-                                )
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                usersWithCurrentState.value.first.forEach { user ->
+                                    if (user.id != usersWithCurrentState.value.second) AppBarAccount(
+                                        buttonTrigger = {
+                                            expanded = false
+                                            currentIdTrigger(user.id)
+                                        },
+                                        fontSize = fontSize,
+                                        user = user,
+                                        currentUser = user.id == usersWithCurrentState.value.second,
+                                        disableState = indicatorVisibleState.value
+                                    )
+                                }
                             }
                         }
                     }
-                }
-            )
-        }
-    ) {
-        ConstraintLayout(
-            modifier = Modifier
-                .padding(it)
-                .fillMaxSize()
+                )
+            }
         ) {
-
-            val (indicator, content) = createRefs()
-
-            AuthDialog(
-                showState = dialogShowState,
-                authCoreScreenData = authCoreScreenData,
-                resetAuthCoreViewModel = resetAuthCoreViewModel,
-                onSuccess = { user ->
-                    addUser(user, true)
-                    switchDialog(false)
-                },
-                onDismiss = {
-                    Log.i("MyLog", "Dialog dismissed")
-                    switchDialog(false)
-                }
-            )
-
-            Content(
+            ConstraintLayout(
                 modifier = Modifier
-                    .constrainAs(content) {
-                        linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-                        height = Dimension.fillToConstraints
-                        width = Dimension.fillToConstraints
-                    },
-                switchAddDialog = { switchDialog(true) },
-                removeUser = removeUser
-            )
+                    .padding(it)
+                    .fillMaxSize()
+            ) {
 
-            Indicator(
-                modifier = Modifier
-                    .constrainAs(indicator) {
-                        linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                val (indicator, content) = createRefs()
+
+                AuthDialog(
+                    showState = dialogShowState,
+                    authCoreScreenData = authCoreScreenData,
+                    resetAuthCoreViewModel = resetAuthCoreViewModel,
+                    onSuccess = { user ->
+                        addUser(user, true)
+                        switchDialog(false)
                     },
-                showState = indicatorVisibleState
-            )
+                    onDismiss = {
+                        Log.i("MyLog", "Dialog dismissed")
+                        switchDialog(false)
+                    }
+                )
+
+                Content(
+                    modifier = Modifier
+                        .constrainAs(content) {
+                            linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                            height = Dimension.fillToConstraints
+                            width = Dimension.fillToConstraints
+                        },
+                    switchAddDialog = { switchDialog(true) },
+                    removeUser = removeUser
+                )
+
+                Indicator(
+                    modifier = Modifier
+                        .constrainAs(indicator) {
+                            linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                        },
+                    showState = indicatorVisibleState
+                )
+            }
         }
     }
 }
@@ -312,31 +353,27 @@ private fun AppBarAccount(
     user: UserInfo,
     currentUser: Boolean,
     disableState: Boolean
-) {
-    Text(
-        text = user.name,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = !disableState) { buttonTrigger(!currentUser) }
-            .padding(all = 4.dp),
-        textAlign = TextAlign.Center,
-        fontSize = fontSize
-    )
-}
+) = Text(
+    text = user.name,
+    modifier = Modifier
+        .fillMaxWidth()
+        .clickable(enabled = !disableState) { buttonTrigger(!currentUser) }
+        .padding(all = 4.dp),
+    textAlign = TextAlign.Center,
+    fontSize = fontSize
+)
 
 @Composable
-private fun Content(modifier: Modifier, switchAddDialog: () -> Unit, removeUser: () -> Unit) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Button(onClick = switchAddDialog) {
-            Text("Add account")
-        }
-        Button(onClick = removeUser) {
-            Text("Log out")
-        }
+private fun Content(modifier: Modifier, switchAddDialog: () -> Unit, removeUser: () -> Unit) = Row(
+    modifier = modifier,
+    horizontalArrangement = Arrangement.SpaceAround,
+    verticalAlignment = Alignment.CenterVertically
+) {
+    Button(onClick = switchAddDialog) {
+        Text("Add account")
+    }
+    Button(onClick = removeUser) {
+        Text("Log out")
     }
 }
 
@@ -372,6 +409,7 @@ fun PreviewContent() = RanobeReaderTheme {
 
     Screen(
         modifier = Modifier.fillMaxSize(),
+        coroutineScope = CoroutineScope(Dispatchers.Main),
         usersWithCurrentState = usersWithCurrentState,
         currentIdTrigger = {},
         switchDialog = {},
