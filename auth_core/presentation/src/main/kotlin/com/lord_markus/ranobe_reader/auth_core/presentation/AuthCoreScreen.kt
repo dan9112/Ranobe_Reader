@@ -2,12 +2,15 @@
 
 package com.lord_markus.ranobe_reader.auth_core.presentation
 
+import android.content.res.Configuration
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
@@ -29,6 +32,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
@@ -106,7 +110,10 @@ private fun Content(
     onBackPressed: @Composable (() -> Unit) -> Unit,
     onSuccess: (UserInfo) -> Unit,
     primary: Boolean
-) = Box(modifier = modifier) {
+) = Box(
+    modifier = modifier.verticalScroll(rememberScrollState()),
+    contentAlignment = Alignment.Center
+) {
     when (authScreenState.value) {
         AuthScreenState.SignIn -> {
             SignInScreen(
@@ -301,7 +308,10 @@ private fun SignUpScreen(
             colors = colors
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = action) {
+        Button(
+            enabled = login.isNotEmpty() && password.isNotEmpty() && password2.isNotEmpty(),
+            onClick = action
+        ) {
             Text(text = stringResource(R.string.sign_up))
         }
     }
@@ -463,7 +473,7 @@ private fun SignInScreen(
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = action,
-            enabled = enabled.value
+            enabled = enabled.value && login.isNotEmpty() && password.isNotEmpty()
         ) {
             Text(text = stringResource(id = if (primary) R.string.login_verb else R.string.add_user))
         }
@@ -482,9 +492,40 @@ private fun SignInScreen(
     }
 }
 
-@Preview(device = "spec:parent=Nexus 10")
+@Preview(
+    device = "spec:parent=pixel_5,orientation=landscape",
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
+    wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE
+)
 @Composable
-fun PreviewPrimarySignInScreen() = RanobeReaderTheme {
+fun PreviewPrimarySignInScreenNotNight() {
+    RanobeReaderTheme {
+        SignInScreen(
+            signInState = MutableStateFlow(
+                AuthUseCaseState.ResultReceived(
+                    result = SignInResultAuth.Success(
+                        userInfo = UserInfo(id = 0, name = "Маркус", state = UserState.User)
+                    )
+                )
+            ),
+            resetSignInTrigger = {},
+            trySignIn = { _, _, _ -> },
+            switchAuthScreenState = {},
+            users = emptyList(),
+            onSuccess = { },
+            switchIndicator = { },
+            primary = true
+        )
+    }
+}
+
+@Preview(
+    device = "spec:parent=pixel_5,orientation=landscape",
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE
+)
+@Composable
+fun PreviewPrimarySignInScreenNight() = RanobeReaderTheme {
     SignInScreen(
         signInState = MutableStateFlow(
             AuthUseCaseState.ResultReceived(
@@ -503,9 +544,13 @@ fun PreviewPrimarySignInScreen() = RanobeReaderTheme {
     )
 }
 
-@Preview(device = "spec:parent=Nexus 10")
+@Preview(
+    device = "spec:parent=pixel_5,orientation=landscape",
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
+    wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE
+)
 @Composable
-fun PreviewDefaultSignInScreen() = RanobeReaderTheme {
+fun PreviewDefaultSignInScreenNotNight() = RanobeReaderTheme {
     SignInScreen(
         signInState = MutableStateFlow(
             AuthUseCaseState.ResultReceived(
@@ -524,9 +569,60 @@ fun PreviewDefaultSignInScreen() = RanobeReaderTheme {
     )
 }
 
-@Preview(device = "spec:parent=Nexus 10")
+@Preview(
+    device = "spec:parent=pixel_5,orientation=landscape",
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE
+)
 @Composable
-fun PreviewSignUpScreen() = RanobeReaderTheme {
+fun PreviewDefaultSignInScreenNight() = RanobeReaderTheme {
+    SignInScreen(
+        signInState = MutableStateFlow(
+            AuthUseCaseState.ResultReceived(
+                result = SignInResultAuth.Success(
+                    userInfo = UserInfo(id = 0, name = "Маркус", state = UserState.User)
+                )
+            )
+        ),
+        resetSignInTrigger = {},
+        trySignIn = { _, _, _ -> },
+        switchAuthScreenState = {},
+        users = emptyList(),
+        onSuccess = { },
+        switchIndicator = { },
+        primary = false
+    )
+}
+
+@Preview(
+    device = "spec:parent=pixel_5,orientation=landscape",
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
+    wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE
+)
+@Composable
+fun PreviewSignUpScreenNotNight() = RanobeReaderTheme {
+    SignUpScreen(
+        signUpState = MutableStateFlow(
+            AuthUseCaseState.ResultReceived(
+                SignUpResultAuth.Success(
+                    UserInfo(id = 0, name = "Маркус", state = UserState.User)
+                )
+            )
+        ),
+        resetSignUpTrigger = {},
+        trySignUp = { _, _, _ -> },
+        onSuccess = { },
+        switchIndicator = { }
+    )
+}
+
+@Preview(
+    device = "spec:parent=pixel_5,orientation=landscape",
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE
+)
+@Composable
+fun PreviewSignUpScreenNight() = RanobeReaderTheme {
     SignUpScreen(
         signUpState = MutableStateFlow(
             AuthUseCaseState.ResultReceived(
