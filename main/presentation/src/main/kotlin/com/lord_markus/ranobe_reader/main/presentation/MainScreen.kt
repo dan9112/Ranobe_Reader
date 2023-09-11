@@ -83,7 +83,7 @@ fun MainScreen(
         }
     }
 
-    val removeUser = {
+    val removeUserAction = {
         coroutineScope.launch {
             viewModel.signOutFlow.collect {
                 when (val currentState = it) {
@@ -145,7 +145,7 @@ fun MainScreen(
         dialogShowState = viewModel.dialogInUse.collectAsStateWithLifecycle(),
         addUser = addUser,
         resetAuthCoreViewModel = viewModel::resetAuthCoreViewModel,
-        removeUser = removeUser
+        removeUser = removeUserAction
     )
 }
 
@@ -225,8 +225,8 @@ private fun Screen(
                     var expanded by remember { mutableStateOf(false) }
 
                     Row(
-                        modifier = Modifier.clickable {
-                            if (usersWithCurrentState.value.first.size > 1) expanded = !expanded
+                        modifier = Modifier.clickable(enabled = usersWithCurrentState.value.first.size > 1) {
+                            expanded = !expanded
                         },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
