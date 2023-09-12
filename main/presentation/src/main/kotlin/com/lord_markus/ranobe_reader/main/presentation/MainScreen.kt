@@ -7,13 +7,14 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -42,6 +43,7 @@ import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
+import com.lord_markus.ranobe_reader.main.presentation.models.NavigationDrawerItemData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -205,23 +207,149 @@ private fun Screen(
     removeUser: () -> Unit,
     resetAuthCoreViewModel: () -> Unit
 ) {
+    val fontSize = 20.sp
     val navigationDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val navigationDrawerItemsData = listOf(
+        NavigationDrawerItemData(
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Favorite,
+                    contentDescription = "Navigation drawer settings item icon"
+                )
+            },
+            titleRes = R.string.my_shelf,
+            onClick = {
+                /*todo: переключиться на свою полку*/
+            }
+        ),
+        NavigationDrawerItemData(
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = "Navigation drawer recommendations item icon"
+                )
+            },
+            titleRes = R.string.recommendations,
+            onClick = {
+                /*todo: переключиться на рекомендации*/
+            }
+        ),
+        NavigationDrawerItemData(
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = "Navigation drawer history item icon"
+                )
+            },
+            titleRes = R.string.history,
+            onClick = {
+                /*todo: переключиться на историю*/
+            }
+        ),
+    )
+    val selectedDrawerItem = rememberSaveable { mutableStateOf<Int?>(null) }
+    selectedDrawerItem.value?.let { selectedItem ->
+        navigationDrawerItemsData.forEachIndexed { index, navigationDrawerItemData ->
+            navigationDrawerItemData.selected = index == selectedItem
+        }
+    }
     ModalNavigationDrawer(
         drawerState = navigationDrawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text("Drawer title")
-                Divider()
+                Text(
+                    "R@nobe Reader",
+                    modifier = Modifier
+                        .background(color = MaterialTheme.colorScheme.primary)
+                        .clickable {
+                            selectedDrawerItem.value = null
+                            coroutineScope.launch {
+                                navigationDrawerState.close()
+                            }
+                            /*todo: вернуться на главную*/
+                        }
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = fontSize,
+                    fontFamily = FontFamily(
+                        Font(
+                            R.font.holitter_gothic,
+                            FontWeight.Normal
+                        )
+                    ),
+                    textAlign = TextAlign.Start
+                )
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    itemsIndexed(navigationDrawerItemsData) { index, itemData ->
+                        NavigationDrawerItem(
+                            label = {
+                                Text(stringResource(itemData.titleRes))
+                            },
+                            selected = itemData.selected,
+                            onClick = {
+                                selectedDrawerItem.value = index
+                                coroutineScope.launch {
+                                    navigationDrawerState.close()
+                                }
+                                itemData.onClick()
+                            },
+                            icon = itemData.icon
+                        )
+                    }
+                }
+                Divider(color = MaterialTheme.colorScheme.primary)
                 NavigationDrawerItem(
                     label = {
                         Text(stringResource(R.string.settings))
                     },
-                    selected = false,
-                    onClick = { /*todo: переключиться на настройки*/ },
+                    selected = selectedDrawerItem.value == -1,
+                    onClick = {
+                        selectedDrawerItem.value = -1
+                        coroutineScope.launch {
+                            navigationDrawerState.close()
+                        }
+                        /*todo: переключиться на настройки*/
+                    },
                     icon = {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             contentDescription = "Navigation drawer settings item icon"
+                        )
+                    }
+                )
+                Divider(color = MaterialTheme.colorScheme.primary)
+                NavigationDrawerItem(
+                    label = {
+                        Text(stringResource(R.string.add_account))
+                    },
+                    selected = dialogShowState.value,
+                    onClick = {
+                        switchDialog(true)
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "Navigation drawer add account item icon"
+                        )
+                    }
+                )
+                NavigationDrawerItem(
+                    label = {
+                        Text(stringResource(R.string.log_out))
+                    },
+                    selected = false,
+                    onClick = {
+                        selectedDrawerItem.value = null
+                        coroutineScope.launch {
+                            navigationDrawerState.close()
+                        }
+                        removeUser()
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Navigation drawer log out item icon"
                         )
                     }
                 )
@@ -231,8 +359,6 @@ private fun Screen(
         Scaffold(
             modifier = modifier,
             topBar = {
-                val fontSize = 20.sp
-
                 TopAppBar(
                     title = {
                         Text(
@@ -306,7 +432,6 @@ private fun Screen(
                     .padding(it)
                     .fillMaxSize()
             ) {
-
                 val (indicator, content) = createRefs()
 
                 AuthDialog(
@@ -316,6 +441,9 @@ private fun Screen(
                     onSuccess = { user ->
                         addUser(user, true)
                         switchDialog(false)
+                        coroutineScope.launch {
+                            navigationDrawerState.close()
+                        }
                     },
                     onDismiss = {
                         Log.i("MyLog", "Dialog dismissed")
@@ -329,9 +457,7 @@ private fun Screen(
                             linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
                             height = Dimension.fillToConstraints
                             width = Dimension.fillToConstraints
-                        },
-                    switchAddDialog = { switchDialog(true) },
-                    removeUser = removeUser
+                        }
                 )
 
                 Indicator(
@@ -364,17 +490,12 @@ private fun AppBarAccount(
 )
 
 @Composable
-private fun Content(modifier: Modifier, switchAddDialog: () -> Unit, removeUser: () -> Unit) = Row(
+private fun Content(modifier: Modifier) = Row(
     modifier = modifier,
     horizontalArrangement = Arrangement.SpaceAround,
     verticalAlignment = Alignment.CenterVertically
 ) {
-    Button(onClick = switchAddDialog) {
-        Text("Add account")
-    }
-    Button(onClick = removeUser) {
-        Text("Log out")
-    }
+
 }
 
 @Preview(device = "spec:parent=Nexus 10")
