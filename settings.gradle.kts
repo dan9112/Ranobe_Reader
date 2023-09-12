@@ -35,4 +35,8 @@ include(":auth_core", ":auth_core:presentation", ":auth_core:domain")
 include(":auth", ":auth:presentation", ":auth:domain")
 include(":main", ":main:presentation", ":main:domain")
 include(":home")
+include(":settings")
+include(":history")
+include(":recommendations")
+include(":my_shelf")
  

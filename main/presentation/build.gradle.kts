@@ -49,6 +49,12 @@ dependencies {
     implementation(project(":main:domain"))
     api(project(":auth_core:presentation"))
 
+    implementation(project(":home"))
+    implementation(project(":settings"))
+    implementation(project(":history"))
+    implementation(project(":recommendations"))
+    implementation(project(":my_shelf"))
+
     api(compose.bom)
     api(compose.bundles.ui)
     debugApi(compose.ui.tooling.preview)

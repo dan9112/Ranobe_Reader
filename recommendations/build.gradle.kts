@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "${AndroidConfig.BASE_PACKAGE}.home"
+    namespace = "${AndroidConfig.BASE_PACKAGE}.recommendations"
     compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {

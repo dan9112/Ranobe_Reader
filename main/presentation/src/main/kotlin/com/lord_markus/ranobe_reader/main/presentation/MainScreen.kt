@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
@@ -32,6 +33,9 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreScreen
 import com.lord_markus.ranobe_reader.auth_core.presentation.AuthCoreScreenData
 import com.lord_markus.ranobe_reader.auth_core.presentation.models.AuthScreenState
@@ -39,11 +43,16 @@ import com.lord_markus.ranobe_reader.auth_core.presentation.models.ExtendedAuthU
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.design.ui.theme.RanobeReaderTheme
+import com.lord_markus.ranobe_reader.history.HistoryScreen
+import com.lord_markus.ranobe_reader.home.HomeScreen
 import com.lord_markus.ranobe_reader.main.domain.models.MainUseCaseError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
 import com.lord_markus.ranobe_reader.main.presentation.models.NavigationDrawerItemData
+import com.lord_markus.ranobe_reader.my_shelf.MyShelfScreen
+import com.lord_markus.ranobe_reader.recommendations.RecommendationsScreen
+import com.lord_markus.ranobe_reader.settings.SettingsScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -209,6 +218,8 @@ private fun Screen(
 ) {
     val fontSize = 20.sp
     val navigationDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val navController = rememberNavController()
+
     val navigationDrawerItemsData = listOf(
         NavigationDrawerItemData(
             icon = {
@@ -218,6 +229,7 @@ private fun Screen(
                 )
             },
             titleRes = R.string.my_shelf,
+            route = "mine",
             onClick = {
                 /*todo: переключиться на свою полку*/
             }
@@ -230,6 +242,7 @@ private fun Screen(
                 )
             },
             titleRes = R.string.recommendations,
+            route = "recommendation",
             onClick = {
                 /*todo: переключиться на рекомендации*/
             }
@@ -242,6 +255,7 @@ private fun Screen(
                 )
             },
             titleRes = R.string.history,
+            route = "story",
             onClick = {
                 /*todo: переключиться на историю*/
             }
@@ -256,7 +270,7 @@ private fun Screen(
     ModalNavigationDrawer(
         drawerState = navigationDrawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(drawerShape = RectangleShape) {
                 Text(
                     "R@nobe Reader",
                     modifier = Modifier
@@ -266,7 +280,9 @@ private fun Screen(
                             coroutineScope.launch {
                                 navigationDrawerState.close()
                             }
-                            /*todo: вернуться на главную*/
+                            navController.navigate("home") {
+                                launchSingleTop = true
+                            }
                         }
                         .fillMaxWidth()
                         .padding(20.dp),
@@ -289,12 +305,16 @@ private fun Screen(
                             selected = itemData.selected,
                             onClick = {
                                 selectedDrawerItem.value = index
+                                navController.navigate(itemData.route) {
+                                    launchSingleTop = true
+                                }
                                 coroutineScope.launch {
                                     navigationDrawerState.close()
                                 }
                                 itemData.onClick()
                             },
-                            icon = itemData.icon
+                            icon = itemData.icon,
+                            shape = RectangleShape
                         )
                     }
                 }
@@ -309,14 +329,17 @@ private fun Screen(
                         coroutineScope.launch {
                             navigationDrawerState.close()
                         }
-                        /*todo: переключиться на настройки*/
+                        navController.navigate("settings") {
+                            launchSingleTop = true
+                        }
                     },
                     icon = {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             contentDescription = "Navigation drawer settings item icon"
                         )
-                    }
+                    },
+                    shape = RectangleShape
                 )
                 Divider(color = MaterialTheme.colorScheme.primary)
                 NavigationDrawerItem(
@@ -332,7 +355,8 @@ private fun Screen(
                             imageVector = Icons.Filled.Add,
                             contentDescription = "Navigation drawer add account item icon"
                         )
-                    }
+                    },
+                    shape = RectangleShape
                 )
                 NavigationDrawerItem(
                     label = {
@@ -351,7 +375,8 @@ private fun Screen(
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Navigation drawer log out item icon"
                         )
-                    }
+                    },
+                    shape = RectangleShape
                 )
             }
         }
@@ -362,7 +387,13 @@ private fun Screen(
                 TopAppBar(
                     title = {
                         Text(
-                            "R@nobe Reader",
+                            text = "R@nobe Reader",
+                            modifier = Modifier.clickable {
+                                selectedDrawerItem.value = null
+                                navController.navigate("home") {
+                                    launchSingleTop = true
+                                }
+                            },
                             fontFamily = FontFamily(
                                 Font(
                                     R.font.holitter_gothic,
@@ -450,15 +481,41 @@ private fun Screen(
                         switchDialog(false)
                     }
                 )
+                NavHost(
+                    navController = navController,
+                    startDestination = "home",
+                    modifier = Modifier.constrainAs(content) {
+                        linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                        height = Dimension.fillToConstraints
+                        width = Dimension.fillToConstraints
+                    }
+                ) {
+                    composable(route = "home") {
+                        Log.v("MyLog", "Home Destination")
 
-                Content(
-                    modifier = Modifier
-                        .constrainAs(content) {
-                            linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-                            height = Dimension.fillToConstraints
-                            width = Dimension.fillToConstraints
-                        }
-                )
+                        HomeScreen(
+                            name = usersWithCurrentState.value.run {
+                                first.find { it.id == second }
+                            }!!.name
+                        )
+                    }
+                    composable(route = "mine") {
+                        Log.v("MyLog", "Settings Destination")
+                        MyShelfScreen()
+                    }
+                    composable(route = "recommendation") {
+                        Log.v("MyLog", "Settings Destination")
+                        RecommendationsScreen()
+                    }
+                    composable(route = "story") {
+                        Log.v("MyLog", "Settings Destination")
+                        HistoryScreen()
+                    }
+                    composable(route = "settings") {
+                        Log.v("MyLog", "Settings Destination")
+                        SettingsScreen()
+                    }
+                }
 
                 Indicator(
                     modifier = Modifier
@@ -488,15 +545,6 @@ private fun AppBarAccount(
     textAlign = TextAlign.Center,
     fontSize = fontSize
 )
-
-@Composable
-private fun Content(modifier: Modifier) = Row(
-    modifier = modifier,
-    horizontalArrangement = Arrangement.SpaceAround,
-    verticalAlignment = Alignment.CenterVertically
-) {
-
-}
 
 @Preview(device = "spec:parent=Nexus 10")
 @Composable

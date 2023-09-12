@@ -7,5 +7,6 @@ data class NavigationDrawerItemData(
     val icon: @Composable (() -> Unit)? = null,
     @StringRes val titleRes: Int,
     val onClick: () -> Unit,
-    var selected: Boolean = false
+    var selected: Boolean = false,
+    val route: String
 )
