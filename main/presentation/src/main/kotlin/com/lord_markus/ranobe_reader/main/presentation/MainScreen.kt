@@ -33,6 +33,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -70,6 +71,7 @@ fun MainScreen(
     Log.i("ComposeLog", "MainScreen")
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val navController = rememberNavController()
 
     val switchUserAction = { id: Long ->
         with(receiver = viewModel) {
@@ -126,8 +128,10 @@ fun MainScreen(
                             is SignOutResultMain.Success -> {
                                 val list = result.signedIn
                                 Log.i("MyLog", list.joinToString())
-
                                 removeUser(list)
+                                navController.navigate("home") {
+                                    launchSingleTop = true
+                                }
                             }
                         }
                     }
@@ -153,6 +157,7 @@ fun MainScreen(
 
     Screen(
         modifier = modifier,
+        navController = navController,
         coroutineScope = coroutineScope,
         usersWithCurrentState = usersWithCurrentState,
         currentIdTrigger = switchUserAction,
@@ -205,6 +210,7 @@ private fun AuthDialog(
 @Composable
 private fun Screen(
     modifier: Modifier,
+    navController: NavHostController,
     coroutineScope: CoroutineScope,
     usersWithCurrentState: State<Pair<List<UserInfo>, Long?>>,
     currentIdTrigger: (Long) -> Unit,
@@ -218,7 +224,6 @@ private fun Screen(
 ) {
     val fontSize = 20.sp
     val navigationDrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val navController = rememberNavController()
 
     val navigationDrawerItemsData = listOf(
         NavigationDrawerItemData(
@@ -578,6 +583,7 @@ fun PreviewContent() = RanobeReaderTheme {
 
     Screen(
         modifier = Modifier.fillMaxSize(),
+        navController = rememberNavController(),
         coroutineScope = CoroutineScope(Dispatchers.Main),
         usersWithCurrentState = usersWithCurrentState,
         currentIdTrigger = {},
