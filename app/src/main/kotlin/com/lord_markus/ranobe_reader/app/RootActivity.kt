@@ -35,28 +35,6 @@ class RootActivity : ComponentActivity() {
                     val navController = rememberNavController()
 
                     LaunchedEffect(Unit) {
-                        viewModel.navigate.collect {
-                            it?.let { hasSignedIn ->
-                                with(receiver = navController) {
-                                    when (hasSignedIn) {
-                                        true -> navigate("main") {
-                                            popUpTo("auth") {
-                                                inclusive = true
-                                            }
-                                        }
-
-                                        false -> navigate("auth") {
-                                            popUpTo("main") {
-                                                inclusive = true
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    LaunchedEffect(Unit) {
                         navController.currentBackStack.collect {
                             Log.d("MyLog", "Current backStack:\n${it.joinToString(separator = "\n")}")
                         }
@@ -75,10 +53,15 @@ class RootActivity : ComponentActivity() {
                                     with(receiver = viewModel) {
                                         updateUsersAndCurrent(signedIn, currentId)
                                     }
+                                    navController.navigate("main") {
+                                        popUpTo("auth") {
+                                            inclusive = true
+                                        }
+                                    }
                                 }
                             )
                         }
-                        composable(route = "main") { backStackEntry ->
+                        composable(route = "main") {
                             Log.v("MyLog", "Main Destination")
 
                             with(receiver = viewModel) {
@@ -94,6 +77,11 @@ class RootActivity : ComponentActivity() {
                                         }
                                     },
                                     removeUser = { users ->
+                                        if (users.isEmpty()) navController.navigate("auth") {
+                                            popUpTo("main") {
+                                                inclusive = true
+                                            }
+                                        }
                                         signedInWithCurrent.value.run {
                                             updateUsersAndCurrent(users, users.firstOrNull()?.id)
                                         }
