@@ -26,6 +26,11 @@ class MainViewModel @Inject constructor(
     signInUseCase: SignInUseCase,
     signUpUseCase: SignUpUseCase
 ) : AuthCoreViewModel(savedStateHandler, signInUseCase, signUpUseCase) {
+    val selectedNavDrawerItem = savedStateHandler.getStateFlow<Int?>("selectedNDI", null)
+
+    fun updateSelectedNavDrawerItem(newSelected: Int? = null) {
+        savedStateHandler["selectedNDI"] = newSelected
+    }
 
     val signOutFlow = savedStateHandler.getStateFlow<MainUseCaseState<SignOutResultMain>>(
         LIST_KEY, MainUseCaseState.InProcess

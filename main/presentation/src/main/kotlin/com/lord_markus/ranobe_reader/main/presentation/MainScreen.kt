@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
@@ -67,109 +66,123 @@ fun MainScreen(
     addUser: (UserInfo, Boolean) -> Unit,
     removeUser: (List<UserInfo>) -> Unit,
     updateCurrent: (Long) -> Unit
-) {
+) = with(receiver = viewModel) {
     Log.i("ComposeLog", "MainScreen")
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val navController = rememberNavController()
 
+
     val switchUserAction = { id: Long ->
-        with(receiver = viewModel) {
-            coroutineScope.launch {
-                setCurrentFlow.collect {
-                    when (it) {
-                        MainUseCaseState.InProcess -> {
-                            viewModel.switchProgressBar(true)
-                        }
+        coroutineScope.launch {
+            setCurrentFlow.collect {
+                when (it) {
+                    MainUseCaseState.InProcess -> {
+                        switchProgressBar(true)
+                    }
 
-                        is MainUseCaseState.ResultReceived -> {
-                            viewModel.switchProgressBar(false)
-                            when (it.result) {
-                                is SetCurrentResultMain.Error -> Toast.makeText(
-                                    context,
-                                    "Attempt to switch account failed!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                    is MainUseCaseState.ResultReceived -> {
+                        switchProgressBar(false)
+                        when (it.result) {
+                            is SetCurrentResultMain.Error -> Toast.makeText(
+                                context,
+                                "Attempt to switch account failed!",
+                                Toast.LENGTH_SHORT
+                            ).show()
 
-                                SetCurrentResultMain.Success -> updateCurrent(id)
+                            SetCurrentResultMain.Success -> {
+                                navController.resetNavGraph()
+                                updateSelectedNavDrawerItem()
+                                updateCurrent(id)
                             }
                         }
                     }
                 }
             }
-            setCurrent(id)
         }
+        setCurrent(id)
     }
 
     val removeUserAction = {
         coroutineScope.launch {
-            viewModel.signOutFlow.collect {
+            signOutFlow.collect {
                 when (val currentState = it) {
                     MainUseCaseState.InProcess -> {
-                        viewModel.switchProgressBar(true)
+                        switchProgressBar(true)
                     }
 
-                    is MainUseCaseState.ResultReceived -> {
-                        viewModel.switchProgressBar(false)
-                        when (val result = currentState.result) {
-                            is SignOutResultMain.Error -> {
-                                if (result.trigger) {
-                                    viewModel.caughtTrigger()
-                                    Toast.makeText(
-                                        context,
-                                        when (val error = result.error) {
-                                            is MainUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
-                                        },
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                    is MainUseCaseState.ResultReceived -> when (val result = currentState.result) {
+                        is SignOutResultMain.Error -> {
+                            switchProgressBar(false)
+                            if (result.trigger) {
+                                caughtTrigger()
+                                Toast.makeText(
+                                    context,
+                                    when (val error = result.error) {
+                                        is MainUseCaseError.StorageError -> error.message// todo: добавить корректную обработку
+                                    },
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
+                        }
 
-                            is SignOutResultMain.Success -> {
-                                val list = result.signedIn
-                                Log.i("MyLog", list.joinToString())
-                                removeUser(list)
-                                navController.navigate("home") {
-                                    popUpTo(navController.graph.startDestinationId)
-                                    launchSingleTop = true
-                                }
+                        is SignOutResultMain.Success -> {
+                            val list = result.signedIn
+                            Log.i("MyLog", list.joinToString())
+                            if (list.isNotEmpty()) {
+                                navController.resetNavGraph()
+                                updateSelectedNavDrawerItem()
                             }
+                            switchProgressBar(false)
+                            removeUser(list)
                         }
                     }
                 }
             }
         }
-        viewModel.signOut()
+        signOut()
     }
-    val authCoreScreenData = viewModel.run {
-        AuthCoreScreenData(
-            authScreenFlow = authScreenFlow,
-            switchAuthScreenState = ::switchAuthScreenState,
-            signInState = signInState,
-            signUpState = signUpState,
-            trySignIn = ::trySignIn,
-            trySignUp = ::trySignUp,
-            resetSignInTrigger = ::resetSignInTrigger,
-            resetSignUpTrigger = ::resetSignUpTrigger,
-            switchAuthCoreProgressBar = ::switchAuthCoreProgressBar,
-            indicatorShowFlow = authCoreProgressBarVisible
-        )
-    }
+    val authCoreScreenData = AuthCoreScreenData(
+        authScreenFlow = authScreenFlow,
+        switchAuthScreenState = ::switchAuthScreenState,
+        signInState = signInState,
+        signUpState = signUpState,
+        trySignIn = ::trySignIn,
+        trySignUp = ::trySignUp,
+        resetSignInTrigger = ::resetSignInTrigger,
+        resetSignUpTrigger = ::resetSignUpTrigger,
+        switchAuthCoreProgressBar = ::switchAuthCoreProgressBar,
+        indicatorShowFlow = authCoreProgressBarVisible
+    )
 
     Screen(
         modifier = modifier,
+        selectedNavDrawerItemState = selectedNavDrawerItem.collectAsStateWithLifecycle(),
+        updateNavDrawerItem = ::updateSelectedNavDrawerItem,
         navController = navController,
         coroutineScope = coroutineScope,
         usersWithCurrentState = usersWithCurrentState,
         currentIdTrigger = switchUserAction,
-        switchDialog = viewModel::switchDialog,
+        switchDialog = ::switchDialog,
         authCoreScreenData = authCoreScreenData,
-        indicatorVisibleState = viewModel.progressBarVisible.collectAsStateWithLifecycle(),
-        dialogShowState = viewModel.dialogInUse.collectAsStateWithLifecycle(),
+        indicatorVisibleState = progressBarVisible.collectAsStateWithLifecycle(),
+        dialogShowState = dialogInUse.collectAsStateWithLifecycle(),
         addUser = addUser,
-        resetAuthCoreViewModel = viewModel::resetAuthCoreViewModel,
+        resetAuthCoreViewModel = ::resetAuthCoreViewModel,
         removeUser = removeUserAction
     )
+}
+
+private fun NavHostController.resetNavGraph() {
+    graph.forEach {
+        clearBackStack(it.id)
+    }
+    navigate("home") {
+        popUpTo(graph.startDestinationId) {
+            inclusive = true
+        }
+        launchSingleTop = true
+    }
 }
 
 @Composable
@@ -211,6 +224,8 @@ private fun AuthDialog(
 @Composable
 private fun Screen(
     modifier: Modifier,
+    selectedNavDrawerItemState: State<Int?>,
+    updateNavDrawerItem: (Int?) -> Unit,
     navController: NavHostController,
     coroutineScope: CoroutineScope,
     usersWithCurrentState: State<Pair<List<UserInfo>, Long?>>,
@@ -267,8 +282,7 @@ private fun Screen(
             }
         ),
     )
-    val selectedDrawerItem = rememberSaveable { mutableStateOf<Int?>(null) }
-    selectedDrawerItem.value?.let { selectedItem ->
+    selectedNavDrawerItemState.value?.let { selectedItem ->
         navigationDrawerItemsData.forEachIndexed { index, navigationDrawerItemData ->
             navigationDrawerItemData.selected = index == selectedItem
         }
@@ -282,7 +296,7 @@ private fun Screen(
                     modifier = Modifier
                         .background(color = MaterialTheme.colorScheme.primary)
                         .clickable {
-                            selectedDrawerItem.value = null
+                            updateNavDrawerItem(null)
                             coroutineScope.launch {
                                 navigationDrawerState.close()
                             }
@@ -314,7 +328,7 @@ private fun Screen(
                             },
                             selected = itemData.selected,
                             onClick = {
-                                selectedDrawerItem.value = index
+                                updateNavDrawerItem(index)
                                 navController.navigate(itemData.route) {
                                     popUpTo(navController.graph.startDestinationId) {
                                         saveState = true
@@ -337,9 +351,9 @@ private fun Screen(
                     label = {
                         Text(stringResource(R.string.settings))
                     },
-                    selected = selectedDrawerItem.value == -1,
+                    selected = selectedNavDrawerItemState.value == -1,
                     onClick = {
-                        selectedDrawerItem.value = -1
+                        updateNavDrawerItem(-1)
                         coroutineScope.launch {
                             navigationDrawerState.close()
                         }
@@ -382,7 +396,7 @@ private fun Screen(
                     },
                     selected = false,
                     onClick = {
-                        selectedDrawerItem.value = null
+                        updateNavDrawerItem(null)
                         coroutineScope.launch {
                             navigationDrawerState.close()
                         }
@@ -407,7 +421,7 @@ private fun Screen(
                         Text(
                             text = "R@nobe Reader",
                             modifier = Modifier.clickable {
-                                selectedDrawerItem.value = null
+                                updateNavDrawerItem(null)
                                 navController.navigate("home") {
                                     popUpTo(navController.graph.startDestinationId) {
                                         saveState = true
@@ -492,11 +506,13 @@ private fun Screen(
                     authCoreScreenData = authCoreScreenData,
                     resetAuthCoreViewModel = resetAuthCoreViewModel,
                     onSuccess = { user ->
-                        addUser(user, true)
                         switchDialog(false)
+                        navController.resetNavGraph()
+                        updateNavDrawerItem(null)
                         coroutineScope.launch {
                             navigationDrawerState.close()
                         }
+                        addUser(user, true)
                     },
                     onDismiss = {
                         Log.i("MyLog", "Dialog dismissed")
@@ -597,9 +613,12 @@ fun PreviewContent() = RanobeReaderTheme {
         switchAuthCoreProgressBar = {},
         indicatorShowFlow = MutableStateFlow(false)
     )
+    val selectedItemState = remember { mutableStateOf<Int?>(null) }
 
     Screen(
         modifier = Modifier.fillMaxSize(),
+        selectedNavDrawerItemState = selectedItemState,
+        updateNavDrawerItem = { selectedItemState.value = it },
         navController = rememberNavController(),
         coroutineScope = CoroutineScope(Dispatchers.Main),
         usersWithCurrentState = usersWithCurrentState,
