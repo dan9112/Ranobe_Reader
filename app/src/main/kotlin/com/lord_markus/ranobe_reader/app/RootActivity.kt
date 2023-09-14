@@ -5,10 +5,13 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,7 +28,26 @@ class RootActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RanobeReaderTheme {
+            val sharedPreferences = getSharedPreferences("nightMode", MODE_PRIVATE)
+            val nightMode = remember {
+                mutableStateOf(
+                    sharedPreferences.run {
+                        if (!contains("nightMode")) null
+                        else getBoolean("nightMode", false)
+                    }
+                )
+            }
+            val dynamicMode = remember {
+                mutableStateOf(
+                    sharedPreferences.run {
+                        getBoolean("dynamic", false)
+                    }
+                )
+            }
+            RanobeReaderTheme(
+                darkTheme = nightMode.value ?: isSystemInDarkTheme(),
+                dynamicColor = dynamicMode.value
+            ) {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -67,6 +89,10 @@ class RootActivity : ComponentActivity() {
                             with(receiver = viewModel) {
                                 Main.Screen(
                                     modifier = Modifier.fillMaxSize(),
+                                    nightMode = nightMode.value,
+                                    updateNightMode = { nightMode.value = it },
+                                    dynamicMode = dynamicMode.value,
+                                    updateDynamicMode = { dynamicMode.value = it },
                                     usersWithCurrentState = signedInWithCurrent.collectAsStateWithLifecycle(),
                                     addUser = { user, newCurrent ->
                                         signedInWithCurrent.value.run {

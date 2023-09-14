@@ -61,6 +61,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(
     modifier: Modifier,
+    nightMode: Boolean?,
+    updateNightMode: (Boolean?) -> Unit,
+    dynamicMode: Boolean,
+    updateDynamicMode: (Boolean) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
     usersWithCurrentState: State<Pair<List<UserInfo>, Long?>>,
     addUser: (UserInfo, Boolean) -> Unit,
@@ -157,6 +161,10 @@ fun MainScreen(
 
     Screen(
         modifier = modifier,
+        nightMode = nightMode,
+        updateNightMode = updateNightMode,
+        dynamicMode = dynamicMode,
+        updateDynamicMode = updateDynamicMode,
         selectedNavDrawerItemState = selectedNavDrawerItem.collectAsStateWithLifecycle(),
         updateNavDrawerItem = ::updateSelectedNavDrawerItem,
         navController = navController,
@@ -224,6 +232,10 @@ private fun AuthDialog(
 @Composable
 private fun Screen(
     modifier: Modifier,
+    nightMode: Boolean?,
+    updateNightMode: (Boolean?) -> Unit,
+    dynamicMode: Boolean,
+    updateDynamicMode: (Boolean) -> Unit,
     selectedNavDrawerItemState: State<Int?>,
     updateNavDrawerItem: (Int?) -> Unit,
     navController: NavHostController,
@@ -438,6 +450,12 @@ private fun Screen(
                             )
                         )
                     },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSecondary,
+                        titleContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
                     navigationIcon = {
                         IconButton(
                             onClick = {
@@ -499,7 +517,7 @@ private fun Screen(
                     .padding(it)
                     .fillMaxSize()
             ) {
-                val (indicator, content) = createRefs()
+                val (indicator, content, title) = createRefs()
 
                 AuthDialog(
                     showState = dialogShowState,
@@ -519,11 +537,38 @@ private fun Screen(
                         switchDialog(false)
                     }
                 )
+                val text = when (selectedNavDrawerItemState.value) {
+                    (-1) -> stringResource(id = R.string.settings)
+                    0 -> stringResource(id = R.string.my_shelf)
+                    1 -> stringResource(id = R.string.recommendations)
+                    2 -> stringResource(id = R.string.history)
+                    else -> ""
+                }
+                Text(
+                    text = text,
+                    modifier = Modifier
+                        .constrainAs(ref = title) {
+                            top.linkTo(parent.top)
+                            linkTo(start = parent.start, end = parent.end)
+                            height = if (text.isNotEmpty()) Dimension.wrapContent else Dimension.value(0.dp)
+                            width = Dimension.fillToConstraints
+                        }
+                        .background(color = MaterialTheme.colorScheme.primaryContainer)
+                        .padding(
+                            start = if (selectedNavDrawerItemState.value != null) 20.dp else 0.dp,
+                            top = if (selectedNavDrawerItemState.value != null) 8.dp else 0.dp,
+                            bottom = if (selectedNavDrawerItemState.value != null) 8.dp else 0.dp
+                        ),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    textAlign = TextAlign.Start,
+                    fontSize = 18.sp
+                )
+
                 NavHost(
                     navController = navController,
                     startDestination = "home",
                     modifier = Modifier.constrainAs(content) {
-                        linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                        linkTo(start = parent.start, top = title.bottom, end = parent.end, bottom = parent.bottom)
                         height = Dimension.fillToConstraints
                         width = Dimension.fillToConstraints
                     }
@@ -538,20 +583,25 @@ private fun Screen(
                         )
                     }
                     composable(route = "mine") {
-                        Log.v("MyLog", "Settings Destination")
+                        Log.v("MyLog", "My shelf Destination")
                         MyShelfScreen()
                     }
                     composable(route = "recommendation") {
-                        Log.v("MyLog", "Settings Destination")
+                        Log.v("MyLog", "Recommendations Destination")
                         RecommendationsScreen()
                     }
                     composable(route = "story") {
-                        Log.v("MyLog", "Settings Destination")
+                        Log.v("MyLog", "History Destination")
                         HistoryScreen()
                     }
                     composable(route = "settings") {
                         Log.v("MyLog", "Settings Destination")
-                        SettingsScreen()
+                        SettingsScreen(
+                            nightMode = nightMode,
+                            updateNightMode = updateNightMode,
+                            dynamicMode = dynamicMode,
+                            updateDynamicMode = updateDynamicMode
+                        )
                     }
                 }
 
@@ -617,6 +667,10 @@ fun PreviewContent() = RanobeReaderTheme {
 
     Screen(
         modifier = Modifier.fillMaxSize(),
+        nightMode = null,
+        updateNightMode = {},
+        dynamicMode = true,
+        updateDynamicMode = {},
         selectedNavDrawerItemState = selectedItemState,
         updateNavDrawerItem = { selectedItemState.value = it },
         navController = rememberNavController(),
