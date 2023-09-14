@@ -130,6 +130,7 @@ fun MainScreen(
                                 Log.i("MyLog", list.joinToString())
                                 removeUser(list)
                                 navController.navigate("home") {
+                                    popUpTo(navController.graph.startDestinationId)
                                     launchSingleTop = true
                                 }
                             }
@@ -286,7 +287,11 @@ private fun Screen(
                                 navigationDrawerState.close()
                             }
                             navController.navigate("home") {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
                                 launchSingleTop = true
+                                restoreState = true
                             }
                         }
                         .fillMaxWidth()
@@ -311,7 +316,11 @@ private fun Screen(
                             onClick = {
                                 selectedDrawerItem.value = index
                                 navController.navigate(itemData.route) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
                                     launchSingleTop = true
+                                    restoreState = true
                                 }
                                 coroutineScope.launch {
                                     navigationDrawerState.close()
@@ -335,7 +344,11 @@ private fun Screen(
                             navigationDrawerState.close()
                         }
                         navController.navigate("settings") {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
                             launchSingleTop = true
+                            restoreState = true
                         }
                     },
                     icon = {
@@ -396,7 +409,11 @@ private fun Screen(
                             modifier = Modifier.clickable {
                                 selectedDrawerItem.value = null
                                 navController.navigate("home") {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
                                     launchSingleTop = true
+                                    restoreState = true
                                 }
                             },
                             fontFamily = FontFamily(
