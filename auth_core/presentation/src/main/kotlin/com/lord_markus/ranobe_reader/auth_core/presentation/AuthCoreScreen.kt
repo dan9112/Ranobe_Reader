@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.constraintlayout.compose.atLeastWrapContent
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth_core.domain.models.*
 import com.lord_markus.ranobe_reader.auth_core.presentation.models.AuthScreenState
@@ -65,8 +66,8 @@ fun AuthCoreScreen(
         modifier = Modifier
             .constrainAs(content) {
                 linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-                height = Dimension.fillToConstraints
-                width = Dimension.fillToConstraints
+                height = Dimension.fillToConstraints.atLeastWrapContent
+                width = Dimension.fillToConstraints.atLeastWrapContent
             },
         authScreenState = authCoreScreenData.authScreenFlow.collectAsStateWithLifecycle(),
         switchAuthScreenState = authCoreScreenData.switchAuthScreenState,
