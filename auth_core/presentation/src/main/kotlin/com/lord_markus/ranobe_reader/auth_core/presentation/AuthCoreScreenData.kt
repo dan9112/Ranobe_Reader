@@ -14,7 +14,9 @@ data class AuthCoreScreenData(
     val trySignIn: (login: String, password: String, update: Boolean) -> Unit,
     val trySignUp: (login: String, password: String, password2: String) -> Unit,
     val resetSignInTrigger: () -> Unit,
+    val resetSignInState: () -> Unit,
     val resetSignUpTrigger: () -> Unit,
+    val resetSignUpState: () -> Unit,
     val switchAuthCoreProgressBar: (Boolean) -> Unit,
     val indicatorShowFlow: StateFlow<Boolean>,
 )

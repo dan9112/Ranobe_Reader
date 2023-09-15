@@ -154,7 +154,9 @@ fun MainScreen(
         trySignIn = ::trySignIn,
         trySignUp = ::trySignUp,
         resetSignInTrigger = ::resetSignInTrigger,
+        resetSignInState = ::resetSignInState,
         resetSignUpTrigger = ::resetSignUpTrigger,
+        resetSignUpState = ::resetSignUpState,
         switchAuthCoreProgressBar = ::switchAuthCoreProgressBar,
         indicatorShowFlow = authCoreProgressBarVisible
     )
@@ -201,6 +203,7 @@ private fun Indicator(showState: State<Boolean>, modifier: Modifier) {
 
 @Composable
 private fun AuthDialog(
+    users: List<UserInfo>,
     showState: State<Boolean>,
     authCoreScreenData: AuthCoreScreenData,
     resetAuthCoreViewModel: () -> Unit,
@@ -218,6 +221,7 @@ private fun AuthDialog(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background),
+                users = users,
                 authCoreScreenData = authCoreScreenData,
                 onBackPressed = { onDismiss() },
                 onSuccess = onSuccess,
@@ -520,6 +524,7 @@ private fun Screen(
                 val (indicator, content, title) = createRefs()
 
                 AuthDialog(
+                    users = usersWithCurrentState.value.first,
                     showState = dialogShowState,
                     authCoreScreenData = authCoreScreenData,
                     resetAuthCoreViewModel = resetAuthCoreViewModel,
@@ -659,7 +664,9 @@ fun PreviewContent() = RanobeReaderTheme {
         trySignIn = { _, _, _ -> },
         trySignUp = { _, _, _ -> },
         resetSignInTrigger = {},
+        resetSignInState = {},
         resetSignUpTrigger = {},
+        resetSignUpState = {},
         switchAuthCoreProgressBar = {},
         indicatorShowFlow = MutableStateFlow(false)
     )

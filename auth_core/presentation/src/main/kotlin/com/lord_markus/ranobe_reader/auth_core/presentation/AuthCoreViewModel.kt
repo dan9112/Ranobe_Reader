@@ -46,6 +46,14 @@ abstract class AuthCoreViewModel(
         }
     }
 
+    fun resetSignInState() {
+        savedStateHandler[SIGN_IN_STATE_KEY] = ExtendedAuthUseCaseState.Default
+    }
+
+    fun resetSignUpState() {
+        savedStateHandler[SIGN_UP_STATE_KEY] = ExtendedAuthUseCaseState.Default
+    }
+
     fun trySignUp(login: String, password: String, password2: String) {
         if (password2 != password) {
             savedStateHandler[SIGN_UP_STATE_KEY] =

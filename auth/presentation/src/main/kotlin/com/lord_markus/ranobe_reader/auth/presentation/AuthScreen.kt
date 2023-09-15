@@ -60,35 +60,39 @@ fun AuthScreen(
         }
     }
 
-    Content(
-        modifier = Modifier.constrainAs(content) {
-            linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-            height = Dimension.fillToConstraints
-            width = Dimension.fillToConstraints
-        },
-        uiVisibleFlow = viewModel.uiVisibleFlow,
-        authCoreScreenData = AuthCoreScreenData(
-            authScreenFlow = viewModel.authScreenFlow,
-            switchAuthScreenState = viewModel::switchAuthScreenState,
-            signInState = viewModel.signInState,
-            signUpState = viewModel.signUpState,
-            trySignIn = viewModel::trySignIn,
-            trySignUp = viewModel::trySignUp,
-            resetSignInTrigger = viewModel::resetSignInTrigger,
-            resetSignUpTrigger = viewModel::resetSignUpTrigger,
-            switchAuthCoreProgressBar = viewModel::switchAuthCoreProgressBar,
-            indicatorShowFlow = viewModel.authCoreProgressBarVisible
-        ),
-        onBackPressed = onBackPressed,
-        onSuccess = { onSuccess(listOf(it), it.id) }
-    )
-    Indicator(
-        show = viewModel.authProgressBarVisible,
-        modifier = Modifier
-            .constrainAs(indicator) {
+    viewModel.run {
+        Content(
+            modifier = Modifier.constrainAs(content) {
                 linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-            }
-    )
+                height = Dimension.fillToConstraints
+                width = Dimension.fillToConstraints
+            },
+            uiVisibleFlow = uiVisibleFlow,
+            authCoreScreenData = AuthCoreScreenData(
+                authScreenFlow = authScreenFlow,
+                switchAuthScreenState = ::switchAuthScreenState,
+                signInState = signInState,
+                signUpState = signUpState,
+                trySignIn = ::trySignIn,
+                trySignUp = ::trySignUp,
+                resetSignInTrigger = ::resetSignInTrigger,
+                resetSignInState = ::resetSignInState,
+                resetSignUpTrigger = ::resetSignUpTrigger,
+                resetSignUpState = ::resetSignUpState,
+                switchAuthCoreProgressBar = ::switchAuthCoreProgressBar,
+                indicatorShowFlow = authCoreProgressBarVisible
+            ),
+            onBackPressed = onBackPressed,
+            onSuccess = { onSuccess(listOf(it), it.id) }
+        )
+        Indicator(
+            show = authProgressBarVisible,
+            modifier = Modifier
+                .constrainAs(indicator) {
+                    linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                }
+        )
+    }
 }
 
 @Composable
@@ -129,7 +133,9 @@ internal class AuthScreenPreviewParameterProvider : PreviewParameterProvider<Aut
                 trySignIn = { _, _, _ -> },
                 trySignUp = { _, _, _ -> },
                 resetSignInTrigger = {},
+                resetSignInState = {},
                 resetSignUpTrigger = {},
+                resetSignUpState = {},
                 switchAuthCoreProgressBar = {},
                 indicatorShowFlow = MutableStateFlow(false)
             )

@@ -57,38 +57,44 @@ fun AuthCoreScreen(
     modifier: Modifier,
     onBackPressed: @Composable (() -> Unit) -> Unit,
     onSuccess: (UserInfo) -> Unit,
+    users: List<UserInfo> = emptyList(),
     primary: Boolean
 ) = ConstraintLayout(modifier = modifier) {
     Log.i("MyLog", "Auth Core Screen")
     val (content, indicator) = createRefs()
 
-    Content(
-        modifier = Modifier
-            .constrainAs(content) {
-                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-                height = Dimension.fillToConstraints.atLeastWrapContent
-                width = Dimension.fillToConstraints.atLeastWrapContent
-            },
-        authScreenState = authCoreScreenData.authScreenFlow.collectAsStateWithLifecycle(),
-        switchAuthScreenState = authCoreScreenData.switchAuthScreenState,
-        signInState = authCoreScreenData.signInState,
-        signUpState = authCoreScreenData.signUpState,
-        trySignIn = authCoreScreenData.trySignIn,
-        trySignUp = authCoreScreenData.trySignUp,
-        resetSignInTrigger = authCoreScreenData.resetSignInTrigger,
-        resetSignUpTrigger = authCoreScreenData.resetSignUpTrigger,
-        switchAuthCoreProgressBar = authCoreScreenData.switchAuthCoreProgressBar,
-        onBackPressed = onBackPressed,
-        onSuccess = onSuccess,
-        primary = primary
-    )
-    Indicator(
-        showState = authCoreScreenData.indicatorShowFlow.collectAsStateWithLifecycle(),
-        modifier = Modifier
-            .constrainAs(indicator) {
-                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-            }
-    )
+    authCoreScreenData.run {
+        Content(
+            modifier = Modifier
+                .constrainAs(content) {
+                    linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                    height = Dimension.fillToConstraints.atLeastWrapContent
+                    width = Dimension.fillToConstraints.atLeastWrapContent
+                },
+            users = users,
+            authScreenState = authScreenFlow.collectAsStateWithLifecycle(),
+            switchAuthScreenState = switchAuthScreenState,
+            signInState = signInState,
+            signUpState = signUpState,
+            trySignIn = trySignIn,
+            trySignUp = trySignUp,
+            resetSignInTrigger = resetSignInTrigger,
+            resetSignInState = resetSignInState,
+            resetSignUpTrigger = resetSignUpTrigger,
+            resetSignUpState = resetSignUpState,
+            switchAuthCoreProgressBar = switchAuthCoreProgressBar,
+            onBackPressed = onBackPressed,
+            onSuccess = onSuccess,
+            primary = primary
+        )
+        Indicator(
+            showState = indicatorShowFlow.collectAsStateWithLifecycle(),
+            modifier = Modifier
+                .constrainAs(indicator) {
+                    linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                }
+        )
+    }
 }
 
 @Composable
@@ -99,13 +105,16 @@ private fun Indicator(showState: State<Boolean>, modifier: Modifier) {
 @Composable
 private fun Content(
     modifier: Modifier,
+    users: List<UserInfo>,
     authScreenState: State<AuthScreenState>,
     switchAuthScreenState: () -> Unit,
     signInState: StateFlow<ExtendedAuthUseCaseState<SignInResultAuth>>,
     signUpState: StateFlow<ExtendedAuthUseCaseState<SignUpResultAuth>>,
     trySignIn: (login: String, password: String, update: Boolean) -> Unit,
     trySignUp: (login: String, password: String, password2: String) -> Unit,
+    resetSignInState: () -> Unit,
     resetSignInTrigger: () -> Unit,
+    resetSignUpState: () -> Unit,
     resetSignUpTrigger: () -> Unit,
     switchAuthCoreProgressBar: (Boolean) -> Unit,
     onBackPressed: @Composable (() -> Unit) -> Unit,
@@ -120,9 +129,10 @@ private fun Content(
             SignInScreen(
                 signInState = signInState,
                 resetSignInTrigger = resetSignInTrigger,
+                resetSignInState = resetSignInState,
                 trySignIn = trySignIn,
                 switchAuthScreenState = switchAuthScreenState,
-                users = emptyList(),
+                users = users,
                 onSuccess = onSuccess,
                 switchIndicator = switchAuthCoreProgressBar,
                 primary = primary
@@ -136,6 +146,7 @@ private fun Content(
 
             SignUpScreen(
                 signUpState = signUpState,
+                resetSignUpState = resetSignUpState,
                 resetSignUpTrigger = resetSignUpTrigger,
                 trySignUp = trySignUp,
                 onSuccess = onSuccess,
@@ -149,6 +160,7 @@ private fun Content(
 private fun SignUpScreen(
     signUpState: StateFlow<ExtendedAuthUseCaseState<SignUpResultAuth>>,
     resetSignUpTrigger: () -> Unit,
+    resetSignUpState: () -> Unit,
     trySignUp: (login: String, password: String, password2: String) -> Unit,
     onSuccess: (UserInfo) -> Unit,
     switchIndicator: (Boolean) -> Unit
@@ -194,11 +206,13 @@ private fun SignUpScreen(
                         }
                     }
                 } else {
+                    errorColor = false
                     enabled.value = true
                 }
                 if (it !is AuthUseCaseState.ResultReceived || it.result !is SignUpResultAuth.Success)
                     enabled.value = true
             } else {
+                errorColor = false
                 switchIndicator(true)
                 enabled.value = false
             }
@@ -226,7 +240,7 @@ private fun SignUpScreen(
             onValueChange = {
                 val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
                 if (newValue != login) {
-                    errorColor = false
+                    resetSignUpState()
                     login = newValue
                 }
             },
@@ -255,7 +269,7 @@ private fun SignUpScreen(
             onValueChange = {
                 val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
                 if (newValue != password) {
-                    errorColor = false
+                    resetSignUpState()
                     password = newValue
                 }
             },
@@ -286,7 +300,7 @@ private fun SignUpScreen(
             onValueChange = {
                 val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
                 if (newValue != password2) {
-                    errorColor = false
+                    resetSignUpState()
                     password2 = newValue
                 }
             },
@@ -322,6 +336,7 @@ private fun SignUpScreen(
 private fun SignInScreen(
     signInState: StateFlow<ExtendedAuthUseCaseState<SignInResultAuth>>,
     resetSignInTrigger: () -> Unit,
+    resetSignInState: () -> Unit,
     trySignIn: (login: String, password: String, update: Boolean) -> Unit,
     switchAuthScreenState: () -> Unit,
     users: List<UserInfo>,
@@ -370,21 +385,25 @@ private fun SignInScreen(
                                 if (!users.contains(it)) {
                                     onSuccess(it)
                                 } else {
+                                    enabled.value = true
+                                    errorColor = true
+                                    switchIndicator(false)
                                     Toast.makeText(
                                         context,
                                         context.getString(R.string.user_has_already_added),
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                    errorColor = true
                                 }
                             }
                         }
                     }
                 } else {
+                    errorColor = false
                     enabled.value = true
                     switchIndicator(false)
                 }
             } else {
+                errorColor = false
                 switchIndicator(true)
                 enabled.value = false
             }
@@ -413,7 +432,7 @@ private fun SignInScreen(
             onValueChange = {
                 val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
                 if (newValue != login) {
-                    errorColor = false
+                    resetSignInState()
                     login = newValue
                 }
             },
@@ -446,7 +465,7 @@ private fun SignInScreen(
             onValueChange = {
                 val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
                 if (newValue != password) {
-                    errorColor = false
+                    resetSignInState()
                     password = newValue
                 }
             },
@@ -510,6 +529,7 @@ fun PreviewPrimarySignInScreenNotNight() {
                 )
             ),
             resetSignInTrigger = {},
+            resetSignInState = {},
             trySignIn = { _, _, _ -> },
             switchAuthScreenState = {},
             users = emptyList(),
@@ -536,6 +556,7 @@ fun PreviewPrimarySignInScreenNight() = RanobeReaderTheme {
             )
         ),
         resetSignInTrigger = {},
+        resetSignInState = {},
         trySignIn = { _, _, _ -> },
         switchAuthScreenState = {},
         users = emptyList(),
@@ -561,6 +582,7 @@ fun PreviewDefaultSignInScreenNotNight() = RanobeReaderTheme {
             )
         ),
         resetSignInTrigger = {},
+        resetSignInState = {},
         trySignIn = { _, _, _ -> },
         switchAuthScreenState = {},
         users = emptyList(),
@@ -586,6 +608,7 @@ fun PreviewDefaultSignInScreenNight() = RanobeReaderTheme {
             )
         ),
         resetSignInTrigger = {},
+        resetSignInState = {},
         trySignIn = { _, _, _ -> },
         switchAuthScreenState = {},
         users = emptyList(),
@@ -611,6 +634,7 @@ fun PreviewSignUpScreenNotNight() = RanobeReaderTheme {
             )
         ),
         resetSignUpTrigger = {},
+        resetSignUpState = {},
         trySignUp = { _, _, _ -> },
         onSuccess = { },
         switchIndicator = { }
@@ -633,6 +657,7 @@ fun PreviewSignUpScreenNight() = RanobeReaderTheme {
             )
         ),
         resetSignUpTrigger = {},
+        resetSignUpState = {},
         trySignUp = { _, _, _ -> },
         onSuccess = { },
         switchIndicator = { }
