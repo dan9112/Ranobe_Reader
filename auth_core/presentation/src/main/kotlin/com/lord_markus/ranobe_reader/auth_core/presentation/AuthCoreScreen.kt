@@ -36,7 +36,6 @@ import androidx.compose.ui.tooling.preview.Wallpapers
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.constraintlayout.compose.atLeastWrapContent
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lord_markus.ranobe_reader.auth_core.domain.models.*
 import com.lord_markus.ranobe_reader.auth_core.presentation.models.AuthScreenState
@@ -64,29 +63,33 @@ fun AuthCoreScreen(
     val (content, indicator) = createRefs()
 
     authCoreScreenData.run {
-        Content(
-            modifier = Modifier
-                .constrainAs(content) {
-                    linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
-                    height = Dimension.fillToConstraints.atLeastWrapContent
-                    width = Dimension.fillToConstraints.atLeastWrapContent
-                },
-            users = users,
-            authScreenState = authScreenFlow.collectAsStateWithLifecycle(),
-            switchAuthScreenState = switchAuthScreenState,
-            signInState = signInState,
-            signUpState = signUpState,
-            trySignIn = trySignIn,
-            trySignUp = trySignUp,
-            resetSignInTrigger = resetSignInTrigger,
-            resetSignInState = resetSignInState,
-            resetSignUpTrigger = resetSignUpTrigger,
-            resetSignUpState = resetSignUpState,
-            switchAuthCoreProgressBar = switchAuthCoreProgressBar,
-            onBackPressed = onBackPressed,
-            onSuccess = onSuccess,
-            primary = primary
-        )
+        Column(
+            modifier = Modifier.constrainAs(content) {
+                linkTo(start = parent.start, top = parent.top, end = parent.end, bottom = parent.bottom)
+                height = Dimension.fillToConstraints
+                width = Dimension.fillToConstraints
+            },
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Content(
+                users = users,
+                authScreenState = authScreenFlow.collectAsStateWithLifecycle(),
+                switchAuthScreenState = switchAuthScreenState,
+                signInState = signInState,
+                signUpState = signUpState,
+                trySignIn = trySignIn,
+                trySignUp = trySignUp,
+                resetSignInTrigger = resetSignInTrigger,
+                resetSignInState = resetSignInState,
+                resetSignUpTrigger = resetSignUpTrigger,
+                resetSignUpState = resetSignUpState,
+                switchAuthCoreProgressBar = switchAuthCoreProgressBar,
+                onBackPressed = onBackPressed,
+                onSuccess = onSuccess,
+                primary = primary
+            )
+        }
         Indicator(
             showState = indicatorShowFlow.collectAsStateWithLifecycle(),
             modifier = Modifier
@@ -104,7 +107,6 @@ private fun Indicator(showState: State<Boolean>, modifier: Modifier) {
 
 @Composable
 private fun Content(
-    modifier: Modifier,
     users: List<UserInfo>,
     authScreenState: State<AuthScreenState>,
     switchAuthScreenState: () -> Unit,
@@ -120,9 +122,13 @@ private fun Content(
     onBackPressed: @Composable (() -> Unit) -> Unit,
     onSuccess: (UserInfo) -> Unit,
     primary: Boolean
-) = Box(
-    modifier = modifier.verticalScroll(rememberScrollState()),
-    contentAlignment = Alignment.Center
+) = Column(
+    modifier = Modifier
+        .wrapContentSize()
+        .padding(16.dp)
+        .verticalScroll(rememberScrollState()),
+    verticalArrangement = Arrangement.Center,
+    horizontalAlignment = Alignment.CenterHorizontally
 ) {
     when (authScreenState.value) {
         AuthScreenState.SignIn -> {
@@ -219,116 +225,107 @@ private fun SignUpScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    val colors = TextFieldDefaults.outlinedTextFieldColors(
+        focusedBorderColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
+        focusedLabelColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
+        unfocusedLabelColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary
+    )
+    Text(text = stringResource(R.string.registration))
+    Spacer(modifier = Modifier.height(16.dp))
+    OutlinedTextField(
+        value = login,
+        onValueChange = {
+            val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
+            if (newValue != login) {
+                resetSignUpState()
+                login = newValue
+            }
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Next,
+            keyboardType = KeyboardType.Text
+        ),
+        label = { Text(text = stringResource(R.string.username)) },
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+        ),
+        trailingIcon = {
+            if (login.isNotBlank()) Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = "clear text",
+                modifier = Modifier.clickable { login = "" },
+                tint = if (errorColor) Color.Red else LocalContentColor.current
+            )
+        },
+        colors = colors
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+        value = password,
+        onValueChange = {
+            val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
+            if (newValue != password) {
+                resetSignUpState()
+                password = newValue
+            }
+        },
+        label = { Text(text = stringResource(R.string.password)) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Next,
+            keyboardType = KeyboardType.Password
+        ),
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+        ),
+        trailingIcon = {
+            if (password.isNotBlank()) Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = "clear text",
+                modifier = Modifier.clickable { password = "" },
+                tint = if (errorColor) Color.Red else LocalContentColor.current
+            )
+        },
+        colors = colors
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    val action: () -> Unit = { trySignUp(login, password, password2) }
+    OutlinedTextField(
+        value = password2,
+        onValueChange = {
+            val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
+            if (newValue != password2) {
+                resetSignUpState()
+                password2 = newValue
+            }
+        },
+        label = { Text(text = stringResource(R.string.password_repeat)) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Done,
+            keyboardType = KeyboardType.Password
+        ),
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardActions = KeyboardActions(onDone = { action() }),
+        trailingIcon = {
+            if (password2.isNotBlank()) Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = "clear text",
+                modifier = Modifier.clickable { password2 = "" },
+                tint = if (errorColor) Color.Red else LocalContentColor.current
+            )
+        },
+        colors = colors
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    Button(
+        enabled = login.isNotEmpty() && password.isNotEmpty() && password2.isNotEmpty(),
+        onClick = action
     ) {
-
-        val colors = TextFieldDefaults.outlinedTextFieldColors(
-            focusedBorderColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
-            focusedLabelColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary
-        )
-        Text(text = stringResource(R.string.registration))
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
-            value = login,
-            onValueChange = {
-                val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
-                if (newValue != login) {
-                    resetSignUpState()
-                    login = newValue
-                }
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Next,
-                keyboardType = KeyboardType.Text
-            ),
-            label = { Text(text = stringResource(R.string.username)) },
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Next) }
-            ),
-            trailingIcon = {
-                if (login.isNotBlank()) Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = "clear text",
-                    modifier = Modifier.clickable { login = "" },
-                    tint = if (errorColor) Color.Red else LocalContentColor.current
-                )
-            },
-            colors = colors
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
-                if (newValue != password) {
-                    resetSignUpState()
-                    password = newValue
-                }
-            },
-            label = { Text(text = stringResource(R.string.password)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Next,
-                keyboardType = KeyboardType.Password
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Next) }
-            ),
-            trailingIcon = {
-                if (password.isNotBlank()) Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = "clear text",
-                    modifier = Modifier.clickable { password = "" },
-                    tint = if (errorColor) Color.Red else LocalContentColor.current
-                )
-            },
-            colors = colors
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        val action: () -> Unit = { trySignUp(login, password, password2) }
-        OutlinedTextField(
-            value = password2,
-            onValueChange = {
-                val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
-                if (newValue != password2) {
-                    resetSignUpState()
-                    password2 = newValue
-                }
-            },
-            label = { Text(text = stringResource(R.string.password_repeat)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Done,
-                keyboardType = KeyboardType.Password
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardActions = KeyboardActions(onDone = { action() }),
-            trailingIcon = {
-                if (password2.isNotBlank()) Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = "clear text",
-                    modifier = Modifier.clickable { password2 = "" },
-                    tint = if (errorColor) Color.Red else LocalContentColor.current
-                )
-            },
-            colors = colors
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            enabled = login.isNotEmpty() && password.isNotEmpty() && password2.isNotEmpty(),
-            onClick = action
-        ) {
-            Text(text = stringResource(R.string.sign_up))
-        }
+        Text(text = stringResource(R.string.sign_up))
     }
 }
 
@@ -410,105 +407,96 @@ private fun SignInScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        val textContainerColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary
-        val colors = TextFieldDefaults.outlinedTextFieldColors(
-            focusedBorderColor = textContainerColor,
-            unfocusedBorderColor = textContainerColor,
-            focusedLabelColor = textContainerColor,
-            unfocusedLabelColor = textContainerColor
-        )
-        Text(text = stringResource(R.string.login))
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
-            value = login,
-            onValueChange = {
-                val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
-                if (newValue != login) {
-                    resetSignInState()
-                    login = newValue
-                }
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Next,
-                keyboardType = KeyboardType.Text
-            ),
-            label = { Text(text = stringResource(R.string.username)) },
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Next) }
-            ),
-            enabled = enabled.value,
-            trailingIcon = {
-                if (login.isNotBlank()) Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = "clear text",
-                    modifier = Modifier.clickable { login = "" },
-                    tint = if (errorColor) Color.Red else LocalContentColor.current
-                )
-            },
-            colors = colors
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        val action: () -> Unit = {
-            trySignIn(login, password, true)
-        }
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
-                if (newValue != password) {
-                    resetSignInState()
-                    password = newValue
-                }
-            },
-            label = { Text(text = stringResource(R.string.password)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Done,
-                keyboardType = KeyboardType.Password
-            ),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardActions = KeyboardActions(
-                onDone = { action() }
-            ),
-            enabled = enabled.value,
-            trailingIcon = {
-                if (password.isNotBlank()) Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = "clear text",
-                    modifier = Modifier.clickable { password = "" },
-                    tint = if (errorColor) Color.Red else LocalContentColor.current
-                )
-            },
-            colors = colors
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = action,
-            enabled = enabled.value && login.isNotEmpty() && password.isNotEmpty()
-        ) {
-            Text(text = stringResource(id = if (primary) R.string.login_verb else R.string.add_user))
-        }
-        if (primary) buildAnnotatedString {
-            withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
-                append(stringResource(R.string.sign_up))
+    val textContainerColor = if (errorColor) Color.Red else MaterialTheme.colorScheme.primary
+    val colors = TextFieldDefaults.outlinedTextFieldColors(
+        focusedBorderColor = textContainerColor,
+        unfocusedBorderColor = textContainerColor,
+        focusedLabelColor = textContainerColor,
+        unfocusedLabelColor = textContainerColor
+    )
+    Text(text = stringResource(R.string.login))
+    Spacer(modifier = Modifier.height(16.dp))
+    OutlinedTextField(
+        value = login,
+        onValueChange = {
+            val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
+            if (newValue != login) {
+                resetSignInState()
+                login = newValue
             }
-        }.let { annotatedString ->
-            Text(
-                text = annotatedString,
-                modifier = Modifier.clickable {
-                    switchAuthScreenState()
-                }
+        },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Next,
+            keyboardType = KeyboardType.Text
+        ),
+        label = { Text(text = stringResource(R.string.username)) },
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+        ),
+        enabled = enabled.value,
+        trailingIcon = {
+            if (login.isNotBlank()) Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = "clear text",
+                modifier = Modifier.clickable { login = "" },
+                tint = if (errorColor) Color.Red else LocalContentColor.current
             )
+        },
+        colors = colors
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    val action: () -> Unit = {
+        trySignIn(login, password, true)
+    }
+    OutlinedTextField(
+        value = password,
+        onValueChange = {
+            val newValue = EmojiParser.removeAllEmojis(it).replace(regex = inputRegex, replacement = "")
+            if (newValue != password) {
+                resetSignInState()
+                password = newValue
+            }
+        },
+        label = { Text(text = stringResource(R.string.password)) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Done,
+            keyboardType = KeyboardType.Password
+        ),
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardActions = KeyboardActions(
+            onDone = { action() }
+        ),
+        enabled = enabled.value,
+        trailingIcon = {
+            if (password.isNotBlank()) Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = "clear text",
+                modifier = Modifier.clickable { password = "" },
+                tint = if (errorColor) Color.Red else LocalContentColor.current
+            )
+        },
+        colors = colors
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    Button(
+        onClick = action,
+        enabled = enabled.value && login.isNotEmpty() && password.isNotEmpty()
+    ) {
+        Text(text = stringResource(id = if (primary) R.string.login_verb else R.string.add_user))
+    }
+    if (primary) buildAnnotatedString {
+        withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
+            append(stringResource(R.string.sign_up))
         }
+    }.let { annotatedString ->
+        Text(
+            text = annotatedString,
+            modifier = Modifier.clickable {
+                switchAuthScreenState()
+            }
+        )
     }
 }
 
