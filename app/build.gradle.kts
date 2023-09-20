@@ -2,11 +2,9 @@
 
 plugins {
     id("com.android.application")
-    kotlin("android")
+    alias(libs.plugins.org.jetbrains.kotlin.android)
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
-    id("kotlin-parcelize")
-    kotlin("plugin.serialization")
 }
 
 android {
@@ -53,30 +51,19 @@ android {
 }
 
 dependencies {
-    implementation(project(":core"))
-    implementation(project(":design"))
-
-    implementation(project(":auth"))
-    implementation(project(":main"))
+    implementation(project(":app:presentation"))
+    implementation(project(":app:domain"))
 
     implementation(androidx.core.ktx)
-    implementation(androidx.lifecycle.runtimektx)
-    implementation(androidx.lifecycle.viewmodel.compose)
-    implementation(compose.activity)
+    implementation(androidx.appcompat)
+    implementation(libs.material)
+
     implementation(compose.lifecycle.runtime)
-    /*testImplementation(libs.junit4)
-    androidTestImplementation(androidx.test.ext)
-    androidTestImplementation(androidx.test.espresso.core)
-    androidTestImplementation(platform(compose.bom))
-    androidTestImplementation(compose.ui.test.manifest)*/
-//    debugImplementation(compose.ui.tooling)
+
     debugImplementation(compose.ui.test.manifest)
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
-    implementation(libs.hilt.navigation.compose)
-
-    implementation(androidx.navigation)
 }
 
 kapt {

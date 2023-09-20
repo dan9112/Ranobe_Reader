@@ -52,7 +52,7 @@ import com.lord_markus.ranobe_reader.main.presentation.models.MainUseCaseState
 import com.lord_markus.ranobe_reader.main.presentation.models.NavigationDrawerItemData
 import com.lord_markus.ranobe_reader.my_shelf.MyShelfScreen
 import com.lord_markus.ranobe_reader.recommendations.RecommendationsScreen
-import com.lord_markus.ranobe_reader.settings.SettingsScreen
+import com.lord_markus.ranobe_reader.settings.Settings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,9 +62,7 @@ import kotlinx.coroutines.launch
 fun MainScreen(
     modifier: Modifier,
     nightMode: Boolean?,
-    updateNightMode: (Boolean?) -> Unit,
     dynamicMode: Boolean,
-    updateDynamicMode: (Boolean) -> Unit,
     viewModel: MainViewModel = hiltViewModel(),
     usersWithCurrentState: State<Pair<List<UserInfo>, Long?>>,
     addUser: (UserInfo, Boolean) -> Unit,
@@ -164,9 +162,7 @@ fun MainScreen(
     Screen(
         modifier = modifier,
         nightMode = nightMode,
-        updateNightMode = updateNightMode,
         dynamicMode = dynamicMode,
-        updateDynamicMode = updateDynamicMode,
         selectedNavDrawerItemState = selectedNavDrawerItem.collectAsStateWithLifecycle(),
         updateNavDrawerItem = ::updateSelectedNavDrawerItem,
         navController = navController,
@@ -237,9 +233,7 @@ private fun AuthDialog(
 private fun Screen(
     modifier: Modifier,
     nightMode: Boolean?,
-    updateNightMode: (Boolean?) -> Unit,
     dynamicMode: Boolean,
-    updateDynamicMode: (Boolean) -> Unit,
     selectedNavDrawerItemState: State<Int?>,
     updateNavDrawerItem: (Int?) -> Unit,
     navController: NavHostController,
@@ -601,12 +595,7 @@ private fun Screen(
                     }
                     composable(route = "settings") {
                         Log.v("MyLog", "Settings Destination")
-                        SettingsScreen(
-                            nightMode = nightMode,
-                            updateNightMode = updateNightMode,
-                            dynamicMode = dynamicMode,
-                            updateDynamicMode = updateDynamicMode
-                        )
+                        Settings.Screen(nightMode = nightMode, dynamicMode = dynamicMode)
                     }
                 }
 
@@ -675,9 +664,7 @@ fun PreviewContent() = RanobeReaderTheme {
     Screen(
         modifier = Modifier.fillMaxSize(),
         nightMode = null,
-        updateNightMode = {},
         dynamicMode = true,
-        updateDynamicMode = {},
         selectedNavDrawerItemState = selectedItemState,
         updateNavDrawerItem = { selectedItemState.value = it },
         navController = rememberNavController(),

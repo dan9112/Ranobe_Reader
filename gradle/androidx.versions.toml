@@ -7,10 +7,11 @@ appcompat = "1.6.1"
 room = "2.5.2"
 constraintlayout = "1.0.1"
 navigation = "2.7.2"
+datastore = "1.0.0"
 
 [libraries]
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
-lifecycle-runtimektx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout-compose", version.ref = "constraintlayout" }
 
@@ -27,6 +28,7 @@ room-kapt = { group = "androidx.room", name = "room-compiler", version.ref = "ro
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 
 navigation = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
+datastore = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
 [bundles]
 lifecycle = ["lifecycle-runtime-compose", "lifecycle-viewmodel-compose", "lifecycle-viewmodel-savedstate"]

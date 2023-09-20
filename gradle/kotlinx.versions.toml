@@ -1,0 +1,5 @@
+[versions]
+coroutines = "1.7.3"
+
+[libraries]
+coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }

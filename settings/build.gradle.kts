@@ -3,6 +3,8 @@
 plugins {
     alias(libs.plugins.com.android.library)
     alias(libs.plugins.org.jetbrains.kotlin.android)
+    kotlin("kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -35,23 +37,33 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = AndroidConfig.KOTLIN_COMPILER_EXTENSION_VERSION
     }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
+    implementation(project(":settings:presentation"))
+    implementation(project(":settings:domain"))
+
     implementation(project(":design"))
 
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
     implementation(libs.material)
 
-    implementation(compose.bom)
-    implementation(compose.bundles.ui)
-    debugImplementation(compose.ui.tooling.preview)
-    implementation(compose.material3)
-    debugImplementation(compose.ui.tooling)
     /*testImplementation(libs.junit4)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)*/
 
     implementation(androidx.constraintlayout)
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+}
+
+kapt {
+    correctErrorTypes = true
 }

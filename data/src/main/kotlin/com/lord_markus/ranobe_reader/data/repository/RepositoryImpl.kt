@@ -1,5 +1,6 @@
 package com.lord_markus.ranobe_reader.data.repository
 
+import com.lord_markus.ranobe_reader.app.domain.repository.AppRepository
 import com.lord_markus.ranobe_reader.auth.domain.models.AuthCheckResult
 import com.lord_markus.ranobe_reader.auth.domain.models.AuthUseCaseError
 import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
@@ -12,11 +13,13 @@ import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentError
 import com.lord_markus.ranobe_reader.main.domain.models.SetCurrentResultMain
 import com.lord_markus.ranobe_reader.main.domain.models.SignOutResultMain
 import com.lord_markus.ranobe_reader.main.domain.repository.MainRepository
+import com.lord_markus.ranobe_reader.settings.domain.models.SettingsData
+import com.lord_markus.ranobe_reader.settings.domain.repository.SettingsRepository
 import java.io.IOException
 import javax.inject.Inject
 
 class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
-    AuthRepository, MainRepository {
+    AuthRepository, MainRepository, AppRepository, SettingsRepository {
     override suspend fun getSignedInUsers(): AuthCheckResult = try {
         dataSource.getSignedIn().let { signedInUsers ->
             signedInUsers?.run {
@@ -67,4 +70,15 @@ class RepositoryImpl @Inject constructor(private val dataSource: IDataSource) :
     } catch (e: IOException) {
         SetCurrentResultMain.Error(error = MainUseCaseError.StorageError(message = e.message))
     }
+
+
+    // todo:
+    //  1. Заменить на контейнеры
+    //  2. Добавить обработку ошибки доступа к памяти
+    override val settingsDataFlow = dataSource.settingsDataFlow
+
+    override suspend fun setSettings(settingsData: SettingsData) = dataSource.setSettings(settingsData)
+    override suspend fun setDynamicColor(on: Boolean) = dataSource.setDynamicColor(on)
+
+    override suspend fun setNightMode(flag: Boolean?) = dataSource.setNightMode(flag)
 }

@@ -44,11 +44,6 @@ dependencies {
     implementation(androidx.appcompat)
     implementation(libs.material)
 
-    implementation(compose.bom)
-    implementation(compose.bundles.ui)
-    debugImplementation(compose.ui.tooling.preview)
-    implementation(compose.material3)
-    debugImplementation(compose.ui.tooling)
     /*testImplementation(libs.junit4)
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)*/

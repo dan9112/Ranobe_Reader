@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">Settings</string>
+    <string name="like_in_the_system">Like in the system</string>
+    <string name="day">Day</string>
+    <string name="night">Night</string>
+    <string name="night_mode">Night mode</string>
+    <string name="dynamic_color">Dynamic color</string>
+</resources>

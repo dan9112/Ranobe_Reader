@@ -1,6 +1,7 @@
 package com.lord_markus.ranobe_reader.data.di
 
 import android.content.Context
+import com.lord_markus.ranobe_reader.app.domain.repository.AppRepository
 import com.lord_markus.ranobe_reader.auth.domain.repository.AuthRepository
 import com.lord_markus.ranobe_reader.auth_core.domain.repository.AuthCoreRepository
 import com.lord_markus.ranobe_reader.data.repository.RepositoryImpl
@@ -12,6 +13,7 @@ import com.lord_markus.ranobe_reader.data.storage.template.db.dao.ITableUserAuth
 import com.lord_markus.ranobe_reader.data.storage.template.db.dao.ITableUserDao
 import com.lord_markus.ranobe_reader.data.storage.template.db.dao.ITableUserInfoDao
 import com.lord_markus.ranobe_reader.main.domain.repository.MainRepository
+import com.lord_markus.ranobe_reader.settings.domain.repository.SettingsRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -59,4 +61,10 @@ object DataModule {
 
     @Provides
     fun getMainRepository(dataSource: IDataSource): MainRepository = getRepository(dataSource)
+
+    @Provides
+    fun getAppRepository(dataSource: IDataSource): AppRepository = getRepository(dataSource)
+
+    @Provides
+    fun getSettingsRepository(dataSource: IDataSource): SettingsRepository = getRepository(dataSource)
 }

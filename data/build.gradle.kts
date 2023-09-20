@@ -39,6 +39,8 @@ android {
 dependencies {
     implementation(project(":auth:domain"))
     implementation(project(":main:domain"))
+    implementation(project(":settings:domain"))
+    implementation(project(":app:domain"))
 
     implementation(androidx.core.ktx)
     implementation(androidx.appcompat)
@@ -54,6 +56,8 @@ dependencies {
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
+
+    implementation(androidx.datastore)
 }
 
 kapt {

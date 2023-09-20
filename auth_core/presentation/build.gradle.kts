@@ -50,7 +50,6 @@ dependencies {
 
     api(compose.bom)
     api(compose.bundles.ui)
-    debugApi(compose.ui.tooling.preview)
     api(compose.material3)
     debugApi(compose.ui.tooling)
     implementation(androidx.core.ktx)

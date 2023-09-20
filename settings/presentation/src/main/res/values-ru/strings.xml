@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">Настройки</string>
+    <string name="like_in_the_system">Как в системе</string>
+    <string name="day">Дневной</string>
+    <string name="night">Ночной</string>
+    <string name="night_mode">Ночной режим</string>
+    <string name="dynamic_color">Динамический цвет</string>
+</resources>

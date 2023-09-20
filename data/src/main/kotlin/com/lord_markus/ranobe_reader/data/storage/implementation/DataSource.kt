@@ -4,6 +4,10 @@ import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import androidx.annotation.StringRes
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.lord_markus.ranobe_reader.core.models.UserInfo
 import com.lord_markus.ranobe_reader.core.models.UserState
 import com.lord_markus.ranobe_reader.data.R
@@ -15,12 +19,16 @@ import com.lord_markus.ranobe_reader.data.storage.template.db.dao.ITableUserInfo
 import com.lord_markus.ranobe_reader.data.storage.template.db.entities.TableUser
 import com.lord_markus.ranobe_reader.data.storage.template.db.entities.TableUserAuthState
 import com.lord_markus.ranobe_reader.data.storage.template.db.entities.TableUserInfo
+import com.lord_markus.ranobe_reader.settings.domain.models.SettingsData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.concurrent.Callable
 import javax.inject.Inject
+import com.lord_markus.ranobe_reader.app.domain.models.SettingsData as AppSettingsData
 
 class DataSource @Inject constructor(
     private val tableUsersDao: ITableUserDao,
@@ -30,13 +38,15 @@ class DataSource @Inject constructor(
     private val context: Context,
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : IDataSource {
-    private val sharedPreferences
+    private val Context.usersDataStore by preferencesDataStore(name = "users")
+    private val usersSharedPreferences
         get() = context.getSharedPreferences("users", MODE_PRIVATE)
 
+    @Suppress("CommitPrefEdits")
     private fun <T> T.updateSharedPreferences(
         dataChange: SharedPreferences.Editor.(T) -> SharedPreferences.Editor
     ) = also {
-        sharedPreferences
+        usersSharedPreferences
             .edit()
             .dataChange(it)
             .apply()
@@ -68,8 +78,10 @@ class DataSource @Inject constructor(
                                 )
                             }
                             .apply {
-                                if (update) updateSharedPreferences {
-                                    putLong(CURRENT_USER_ID_KEY, id)
+                                if (update) runBlocking {
+                                    context.usersDataStore.edit { preferences ->
+                                        preferences[CURRENT_USER_ID_KEY_] = id
+                                    }
                                 }
                             }
                     }
@@ -87,8 +99,8 @@ class DataSource @Inject constructor(
     ) = withContext(defaultDispatcher) {
         database.runInTransaction(
             body = Callable {
-                if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
-                    val id = sharedPreferences.getLong(CURRENT_USER_ID_KEY, 1L)
+                if (usersSharedPreferences.contains(CURRENT_USER_ID_KEY)) {
+                    val id = usersSharedPreferences.getLong(CURRENT_USER_ID_KEY, 1L)
                     if (action(id) == 0) {
                         updateSharedPreferences {
                             remove(CURRENT_USER_ID_KEY)
@@ -139,8 +151,15 @@ class DataSource @Inject constructor(
                         id
                     }
                         ?.also {
-                            if (withSignIn) updateSharedPreferences {
-                                putLong(CURRENT_USER_ID_KEY, id)
+                            if (withSignIn) {
+                                runBlocking {
+                                    context.usersDataStore.edit { preferences ->
+                                        preferences[CURRENT_USER_ID_KEY_] = id
+                                    }
+                                }
+                                updateSharedPreferences {
+                                    putLong(CURRENT_USER_ID_KEY, id)
+                                }
                             }
                         }
                 }
@@ -160,10 +179,15 @@ class DataSource @Inject constructor(
                     .let { usersInfo ->
                         if (usersInfo.isEmpty()) {
                             null
-                        } else usersInfo to if (sharedPreferences.contains(CURRENT_USER_ID_KEY)) {
-                            sharedPreferences.getLong(CURRENT_USER_ID_KEY, -1L)
+                        } else usersInfo to if (usersSharedPreferences.contains(CURRENT_USER_ID_KEY)) {
+                            usersSharedPreferences.getLong(CURRENT_USER_ID_KEY, -1L)
                         } else {// никогда не должен срабатывать, страховка!
                             usersInfo.first().id.also { id ->
+                                runBlocking {
+                                    context.usersDataStore.edit { preferences ->
+                                        preferences[CURRENT_USER_ID_KEY_] = id
+                                    }
+                                }
                                 updateSharedPreferences {
                                     putLong(CURRENT_USER_ID_KEY, id)
                                 }
@@ -176,13 +200,66 @@ class DataSource @Inject constructor(
 
     override suspend fun setCurrent(id: Long) = withContext(defaultDispatcher) {
         tableUserAuthState.getAuthStateById(id)?.also {
-            if (it) updateSharedPreferences {
-                putLong(CURRENT_USER_ID_KEY, id)
+            if (it) {
+                runBlocking {
+                    context.usersDataStore.edit { preferences ->
+                        preferences[CURRENT_USER_ID_KEY_] = id
+                    }
+                }
+                updateSharedPreferences {
+                    putLong(CURRENT_USER_ID_KEY, id)
+                }
+            }
+        }
+    }
+
+    private val Context.settingsDataStore by preferencesDataStore(name = "settings")
+
+    override val settingsDataFlow = context.settingsDataStore.data.map { preferences ->
+        AppSettingsData(
+            nightMode = preferences[NIGHT_MODE_KEY],
+            dynamicColor = preferences[DYNAMIC_COLOR_KEY] ?: true
+        )
+    }
+
+    override suspend fun setSettings(settingsData: SettingsData) {
+        withContext(defaultDispatcher) {
+            context.settingsDataStore.edit { preferences ->
+                with(settingsData) {
+                    nightMode?.let {
+                        preferences[NIGHT_MODE_KEY] = it
+                    } ?: preferences.remove(NIGHT_MODE_KEY)
+                    if (!dynamicColor) preferences[DYNAMIC_COLOR_KEY] = false
+                    else preferences.remove(DYNAMIC_COLOR_KEY)
+                }
+            }
+        }
+    }
+
+    override suspend fun setNightMode(flag: Boolean?) {
+        withContext(defaultDispatcher) {
+            context.settingsDataStore.edit { preferences ->
+                flag?.let {
+                    preferences[NIGHT_MODE_KEY] = it
+                } ?: preferences.remove(NIGHT_MODE_KEY)
+            }
+        }
+    }
+
+    override suspend fun setDynamicColor(on: Boolean) {
+        withContext(defaultDispatcher) {
+            context.settingsDataStore.edit { preferences ->
+                if (!on) preferences[DYNAMIC_COLOR_KEY] = false
+                else preferences.remove(DYNAMIC_COLOR_KEY)
             }
         }
     }
 
     private companion object {
         const val CURRENT_USER_ID_KEY = "current_user_key"
+        val CURRENT_USER_ID_KEY_ = longPreferencesKey("current_user_key")
+
+        val NIGHT_MODE_KEY = booleanPreferencesKey("nightMode")
+        val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic")
     }
 }
