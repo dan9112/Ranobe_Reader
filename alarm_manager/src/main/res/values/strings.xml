@@ -1,3 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <resources>
+    <string name="alert">Alert!</string>
     <string name="app_name" translatable="false">Alarm Manager</string>
+    <string name="cancel">Cancel</string>
+    <string name="create">Create</string>
+    <string name="do_not_ask_again">Don\'t ask again</string>
+    <string name="exact_alarm_permission_definition">You don\'t have permission for precise alarms. Without this permission, all installed alarms will be triggered inaccurately in order to use the battery more economically. If you want accurate alarms, please grant permission. Otherwise, an inaccurate alarm will be set.</string>
+    <string name="grant">Grant</string>
+    <string name="not_exact">Not exact!</string>
 </resources>

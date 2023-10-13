@@ -1,2 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources />
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="alert">Внимание!</string>
+    <string name="cancel">Отмена</string>
+    <string name="create">Создать</string>
+    <string name="do_not_ask_again">Не спрашивать снова</string>
+    <string name="exact_alarm_permission_definition">У вас нет разрешения на точные сигналы тревоги. Без этого разрешения все установленные сигналы тревоги будут срабатывать с погрешностью с целью более экономичного использования батареи. Если вы хотите точного срабатывания сигналов тревоги, предоставьте разрешение. В противном случае, будут установлен неточный сигнал тревоги.</string>
+    <string name="grant">Предоставить</string>
+    <string name="not_exact">Не точно!</string>
+</resources>
