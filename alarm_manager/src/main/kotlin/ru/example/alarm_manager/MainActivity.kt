@@ -5,8 +5,12 @@ package ru.example.alarm_manager
 import android.app.AlarmManager
 import android.app.AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
 import android.app.PendingIntent
+import android.app.PendingIntent.getForegroundService
+import android.app.PendingIntent.getService
+import android.content.Context
 import android.content.Intent
 import android.os.Build.VERSION.SDK_INT
+import android.os.Build.VERSION_CODES.O
 import android.os.Build.VERSION_CODES.S
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
@@ -106,12 +110,11 @@ class MainActivity : ComponentActivity() {
         val coroutineScope = rememberCoroutineScope()
 
         fun setAlarm(alarmManager: AlarmManager, timeInMillis: Long) {
-            val intent = Intent(context, AlarmReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
+            val intent = Intent(context, AlarmService::class.java)
+            val pendingIntent = getService(
                 context,
                 0,
-                intent,
-                PendingIntent.FLAG_IMMUTABLE
+                intent
             )
             if (alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
@@ -139,11 +142,10 @@ class MainActivity : ComponentActivity() {
             },
             cancelAlarms = {
                 alarmManager.cancel(
-                    PendingIntent.getBroadcast(
+                    getService(
                         context,
                         1,
-                        Intent(context, AlarmReceiver::class.java),
-                        PendingIntent.FLAG_IMMUTABLE
+                        Intent(context, AlarmService::class.java)
                     )
                 )
             },
@@ -205,17 +207,29 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun getService(context: Context, requestCode: Int, intent: Intent) = if (SDK_INT < O) getService(
+        context,
+        requestCode,
+        intent,
+        PendingIntent.FLAG_IMMUTABLE
+    )
+    else getForegroundService(
+        context,
+        requestCode,
+        intent,
+        PendingIntent.FLAG_IMMUTABLE
+    )
+
     @Composable
     private fun ContentCompat(alarmManager: AlarmManager) {
         val context = LocalContext.current
 
         fun setAlarmCompat(alarmManager: AlarmManager, timeInMillis: Long) {
-            val intent = Intent(context, AlarmReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
+            val intent = Intent(context, AlarmService::class.java)
+            val pendingIntent = getService(
                 context,
                 0,
-                intent,
-                PendingIntent.FLAG_IMMUTABLE
+                intent
             )
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
         }
@@ -227,11 +241,10 @@ class MainActivity : ComponentActivity() {
             },
             cancelAlarms = {
                 alarmManager.cancel(
-                    PendingIntent.getBroadcast(
+                    getService(
                         context,
                         1,
-                        Intent(context, AlarmReceiver::class.java),
-                        PendingIntent.FLAG_IMMUTABLE
+                        Intent(context, AlarmService::class.java)
                     )
                 )
             },
@@ -299,7 +312,7 @@ private fun MainScreen(generateAlarm: (Long) -> Unit, cancelAlarms: () -> Unit, 
     }
 }
 
-@Preview(wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE, showBackground = true)
+@Preview(wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE, showBackground = true, locale = "ru")
 @Composable
 fun MainScreenPreview() = RanobeReaderTheme {
     MainScreen(
@@ -309,7 +322,7 @@ fun MainScreenPreview() = RanobeReaderTheme {
     )
 }
 
-@Preview(apiLevel = S, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE, showBackground = true)
+@Preview(apiLevel = S, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE, showBackground = true, locale = "ru")
 @Composable
 fun MainScreenSdk_S__S_V2_Preview() = RanobeReaderTheme {
     MainScreen(
@@ -319,7 +332,7 @@ fun MainScreenSdk_S__S_V2_Preview() = RanobeReaderTheme {
     )
 }
 
-@Preview(apiLevel = S, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE, showBackground = true)
+@Preview(apiLevel = S, wallpaper = Wallpapers.RED_DOMINATED_EXAMPLE, showBackground = true, locale = "ru")
 @Composable
 fun MainScreenSdk_S__S_V2_NotExactAlarmsPreview() = RanobeReaderTheme {
     MainScreen(

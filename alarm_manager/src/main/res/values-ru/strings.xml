@@ -7,4 +7,9 @@
     <string name="exact_alarm_permission_definition">У вас нет разрешения на точные сигналы тревоги. Без этого разрешения все установленные сигналы тревоги будут срабатывать с погрешностью с целью более экономичного использования батареи. Если вы хотите точного срабатывания сигналов тревоги, предоставьте разрешение. В противном случае, будут установлен неточный сигнал тревоги.</string>
     <string name="grant">Предоставить</string>
     <string name="not_exact">Не точно!</string>
+    <string name="notification_channel_for_worker_messages">Канал уведомлений для сообщений работника</string>
+    <string name="alarm">Сигнал тревоги</string>
+    <string name="alarm_notification_title">Сообщение работника</string>
+    <string name="alarm_notifications">Уведомления работника</string>
+    <string name="alarm_notification_message">Сигнал тревоги запустил сервис</string>
 </resources>

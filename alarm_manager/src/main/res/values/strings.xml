@@ -8,4 +8,9 @@
     <string name="exact_alarm_permission_definition">You don\'t have permission for precise alarms. Without this permission, all installed alarms will be triggered inaccurately in order to use the battery more economically. If you want accurate alarms, please grant permission. Otherwise, an inaccurate alarm will be set.</string>
     <string name="grant">Grant</string>
     <string name="not_exact">Not exact!</string>
+    <string name="notification_channel_for_worker_messages">Notification channel for worker messages</string>
+    <string name="alarm">Alarm</string>
+    <string name="alarm_notification_title">Worker message</string>
+    <string name="alarm_notifications">Worker notifications</string>
+    <string name="alarm_notification_message">Alarm triggered service</string>
 </resources>
