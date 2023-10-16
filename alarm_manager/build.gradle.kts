@@ -20,6 +20,7 @@ android {
         }
 
         multiDexEnabled = true
+        resourceConfigurations += arrayOf("ru")
     }
 
     buildTypes {
