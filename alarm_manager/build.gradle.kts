@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.com.android.application)
     alias(libs.plugins.org.jetbrains.kotlin.android)
+    id("kotlin-parcelize")
+    kotlin("kapt")
 }
 
 android {
@@ -67,4 +69,9 @@ dependencies {
 
     implementation(libs.kotlinx.datetime)
     implementation(libs.datastore.preferences)
+
+    implementation("androidx.room:room-runtime:2.5.2")
+    annotationProcessor("androidx.room:room-compiler:2.5.2")
+    kapt("androidx.room:room-compiler:2.5.2")
+    implementation("androidx.room:room-ktx:2.5.2")
 }
